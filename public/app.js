@@ -931,6 +931,34 @@ root.addEventListener('change', (e) => {
   }
 });
 
+// ---------- live refresh: pick up posts/checklist changes from the other person ----------
+let refreshing = false;
+async function refreshLiveData() {
+  if (refreshing || !cache.trip) return;
+  // don't clobber an in-progress, uncommitted edit (e.g. mid-keystroke in a schedule field)
+  const active = document.activeElement;
+  if (active && root.contains(active) && /^(INPUT|TEXTAREA)$/.test(active.tagName)) return;
+  refreshing = true;
+  try {
+    const dayKeys = new Set([currentDayIndex]);
+    if (state.detail != null) dayKeys.add(state.detail);
+    const [prep, ...schedules] = await Promise.all([
+      api('/prep'),
+      ...[...dayKeys].map((dk) => api('/schedule/' + dk))
+    ]);
+    cache.prep = prep;
+    [...dayKeys].forEach((dk, i) => { cache.schedules[dk] = schedules[i]; });
+    render();
+  } catch (e) {
+    // offline or the free host is waking up — just try again next cycle
+  } finally {
+    refreshing = false;
+  }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshLiveData(); });
+window.addEventListener('focus', refreshLiveData);
+setInterval(refreshLiveData, 25000);
+
 // ---------- boot ----------
 async function boot() {
   const [trip, prep] = await Promise.all([api('/trip'), api('/prep')]);
