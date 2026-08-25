@@ -712,7 +712,7 @@ function renderNav() {
     ['map', 'ph-duotone ph-map-trifold', 'Map'], ['prep', 'ph-duotone ph-check-square-offset', 'Prep'],
     ['more', 'ph-duotone ph-folder-open', 'File']
   ];
-  let html = `<div class="nav-bar" style="position:fixed;left:0;right:0;bottom:0;z-index:30;height:66px;padding:6px 24px 12px;box-sizing:border-box;display:flex;align-items:stretch;gap:2px;background:#FDF7E7;border-top:1.5px solid rgba(51,48,74,.08);max-width:430px;margin:0 auto">`;
+  let html = `<div class="nav-bar" style="position:fixed;left:0;right:0;bottom:0;z-index:30;height:66px;padding:6px 24px calc(12px + env(safe-area-inset-bottom));box-sizing:border-box;display:flex;align-items:stretch;gap:2px;background:#FDF7E7;border-top:1.5px solid rgba(51,48,74,.08);max-width:430px;margin:0 auto">`;
   tabs.forEach(([key, icon, label]) => {
     const active = state.tab === key && state.detail == null && state.sub == null;
     html += `<div data-action="tab|${key}" style="flex:1;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:8px;color:${active ? TEAL_D : 'rgba(51,48,74,.55)'}"><i class="${icon}" style="font-size:18px"></i><div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:9.5px">${label}</div></div>`;
@@ -940,5 +940,9 @@ async function boot() {
   render();
 }
 boot().catch(err => { root.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#33304A">Could not load the trip. ' + esc(err.message) + '</div>'; console.error(err); });
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+}
 
 })();
