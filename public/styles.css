@@ -19,8 +19,8 @@ input,textarea{font-family:inherit}
 .leaflet-control-attribution{font-size:9px!important}
 
 #app{display:flex;justify-content:center;min-height:100vh}
-.app-shell{position:relative;width:100%;max-width:430px;min-height:100vh;background:#C6DEDA;display:flex;flex-direction:column;box-shadow:0 0 60px rgba(51,48,74,.25)}
-.overlay{max-width:430px;margin:0 auto}
+.app-shell{position:relative;width:100%;max-width:600px;min-height:100vh;background:#C6DEDA;display:flex;flex-direction:column;box-shadow:0 0 60px rgba(51,48,74,.25)}
+.overlay{max-width:600px;margin:0 auto}
 
 .photo-slot{width:100%;height:100%;object-fit:cover;display:block;background:#DCEBE7}
 

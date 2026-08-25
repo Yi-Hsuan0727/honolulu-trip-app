@@ -248,11 +248,11 @@ function renderNow() {
 <div style="position:absolute;inset:0;overflow:hidden;z-index:0;background:#FDF7E7">
 <div style="position:absolute;left:0;right:0;top:0;height:450px;overflow:hidden;background:linear-gradient(180deg,#8FCBE0 0%,#BEE0E8 28%,#C6DEDA 55%,#C6DEDA 96%,#FDF7E7 100%)">
 <div style="position:absolute;left:0;right:0;top:0;height:210px;overflow:hidden">
-<div style="position:absolute;left:50%;top:34px;transform:translateX(-50%);width:400px;height:400px;border-radius:50%;background:radial-gradient(circle at 50% 62%,#FBE9A8,#F8D66B 60%,#F2BE4E)"></div>
-<div style="position:absolute;left:32px;top:78px;font:600 15px 'Quicksand',sans-serif;color:#FDF7E7;animation:twinkle 3.4s ease-in-out infinite">+</div>
-<div style="position:absolute;left:74px;top:124px;font:600 11px 'Quicksand',sans-serif;color:#FDF7E7;animation:twinkle 4.2s ease-in-out .6s infinite">+</div>
-<div style="position:absolute;right:42px;top:98px;font:600 13px 'Quicksand',sans-serif;color:#FDF7E7;animation:twinkle 3.8s ease-in-out 1.2s infinite">+</div>
-<div style="position:absolute;right:86px;top:64px;font:600 10px 'Quicksand',sans-serif;color:#FDF7E7;animation:twinkle 4.6s ease-in-out .3s infinite">+</div>
+<div style="position:absolute;left:50%;top:50px;transform:translateX(-50%);width:400px;height:400px;border-radius:50%;background:radial-gradient(circle at 50% 62%,#FBE9A8,#F8D66B 60%,#F2BE4E)"></div>
+<div style="position:absolute;left:32px;top:90px;font:600 15px 'Quicksand',sans-serif;color:#FDF7E7;animation:twinkle 3.4s ease-in-out infinite">+</div>
+<div style="position:absolute;left:74px;top:136px;font:600 11px 'Quicksand',sans-serif;color:#FDF7E7;animation:twinkle 4.2s ease-in-out .6s infinite">+</div>
+<div style="position:absolute;right:42px;top:110px;font:600 13px 'Quicksand',sans-serif;color:#FDF7E7;animation:twinkle 3.8s ease-in-out 1.2s infinite">+</div>
+<div style="position:absolute;right:86px;top:76px;font:600 10px 'Quicksand',sans-serif;color:#FDF7E7;animation:twinkle 4.6s ease-in-out .3s infinite">+</div>
 </div>
 <div style="position:absolute;left:-26px;top:206px;width:96px;height:34px;border-radius:20px;background:#FDF7E7;opacity:.92"></div>
 <div style="position:absolute;left:14px;top:190px;width:52px;height:38px;border-radius:50%;background:#FDF7E7;opacity:.92"></div>
@@ -261,15 +261,15 @@ function renderNow() {
 <div style="position:absolute;left:0;right:0;top:210px;height:240px;background:linear-gradient(180deg,#8FCBE0 0%,rgba(143,203,224,.55) 62%,rgba(198,222,218,.25) 86%,rgba(198,222,218,0) 100%)"></div>
 <div style="position:absolute;left:0;right:0;top:210px;height:240px;background:repeating-linear-gradient(180deg,rgba(253,247,231,.34) 0 2px,transparent 2px 10px)"></div>
 <div style="position:absolute;left:0;right:0;top:429px;height:7px;overflow:hidden;background-image:repeating-radial-gradient(circle at 10px 0,rgba(255,255,255,.9) 0 4px,transparent 4px 20px);animation:wave-drift 3.2s linear infinite"></div>
-${hibiscusDeco('hibiscus-l', 'position:absolute;left:-18px;top:10px;width:72px;height:72px;z-index:3', 72, 8, -15, true)}
-${hibiscusDeco('hibiscus-r', 'position:absolute;right:-14px;top:20px;width:58px;height:58px;z-index:3', 58, -14, -15, true)}
+${hibiscusDeco('hibiscus-l', 'position:absolute;left:-18px;top:calc(26px + env(safe-area-inset-top));width:72px;height:72px;z-index:3', 72, 8, -15, true)}
+${hibiscusDeco('hibiscus-r', 'position:absolute;right:-14px;top:calc(36px + env(safe-area-inset-top));width:58px;height:58px;z-index:3', 58, -14, -15, true)}
 ${hibiscusDeco('hibiscus-r', 'position:absolute;right:20px;top:150px;width:34px;height:34px;z-index:2;opacity:.8', 34, 22, 30)}
 </div>
 </div>
 
 <div style="height:246px"></div>
 
-<div style="position:absolute;left:0;right:0;top:72px;z-index:4;display:flex;flex-direction:column;align-items:center;gap:9px">
+<div style="position:absolute;left:0;right:0;top:calc(88px + env(safe-area-inset-top));z-index:4;display:flex;flex-direction:column;align-items:center;gap:9px">
 <div style="display:flex;align-items:center;gap:9px;font-family:'Quicksand',sans-serif;font-weight:700;font-size:18px;letter-spacing:.01em;color:#33304A;margin-top:30px">
 <i class="ph-duotone ph-hand-waving" style="font-size:27px"></i><span>Aloha, Mimi &amp; Wellen</span>
 </div>
@@ -712,7 +712,7 @@ function renderNav() {
     ['map', 'ph-duotone ph-map-trifold', 'Map'], ['prep', 'ph-duotone ph-check-square-offset', 'Prep'],
     ['more', 'ph-duotone ph-folder-open', 'File']
   ];
-  let html = `<div class="nav-bar" style="position:fixed;left:0;right:0;bottom:0;z-index:30;height:66px;padding:6px 24px calc(12px + env(safe-area-inset-bottom));box-sizing:border-box;display:flex;align-items:stretch;gap:2px;background:#FDF7E7;border-top:1.5px solid rgba(51,48,74,.08);max-width:430px;margin:0 auto">`;
+  let html = `<div class="nav-bar" style="position:fixed;left:0;right:0;bottom:0;z-index:30;height:70px;padding:10px 24px calc(12px + env(safe-area-inset-bottom));box-sizing:border-box;display:flex;align-items:stretch;gap:2px;background:#FDF7E7;border-top:1.5px solid rgba(51,48,74,.08);max-width:600px;margin:0 auto">`;
   tabs.forEach(([key, icon, label]) => {
     const active = state.tab === key && state.detail == null && state.sub == null;
     html += `<div data-action="tab|${key}" style="flex:1;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:8px;color:${active ? TEAL_D : 'rgba(51,48,74,.55)'}"><i class="${icon}" style="font-size:18px"></i><div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:9.5px">${label}</div></div>`;
