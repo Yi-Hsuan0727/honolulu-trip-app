@@ -1,0 +1,6 @@
+node_modules/
+server/trip.db
+server/trip.db-shm
+server/trip.db-wal
+server/uploads/*
+!server/uploads/.gitkeep

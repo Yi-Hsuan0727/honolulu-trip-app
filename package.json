@@ -1,0 +1,21 @@
+{
+  "name": "honolulu-trip-app",
+  "version": "1.0.0",
+  "description": "Mimi & Wellen's Oʻahu trip companion",
+  "private": true,
+  "type": "commonjs",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "dependencies": {
+    "@fontsource/plus-jakarta-sans": "^5.3.0",
+    "@fontsource/quicksand": "^5.3.0",
+    "@phosphor-icons/web": "^2.1.2",
+    "better-sqlite3": "^11.3.0",
+    "express": "^4.21.0",
+    "leaflet": "^1.9.4",
+    "multer": "^2.0.1"
+  }
+}
