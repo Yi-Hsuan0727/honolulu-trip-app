@@ -243,33 +243,33 @@ function scheduleSectionHtml(dayKey, variant) {
 function renderNow() {
   const day = cache.trip.days[currentDayIndex];
   const dayNum = String(currentDayIndex + 1);
-  return `<div style="background:#FDF7E7;padding-bottom:98px">
+  return `<div style="background:#FDF7E7;padding-bottom:calc(98px + env(safe-area-inset-bottom))">
 <div style="position:relative">
 <div style="position:absolute;inset:0;overflow:hidden;z-index:0;background:#FDF7E7">
-<div style="position:absolute;left:0;right:0;top:0;height:450px;overflow:hidden;background:linear-gradient(180deg,#8FCBE0 0%,#BEE0E8 28%,#C6DEDA 55%,#C6DEDA 96%,#FDF7E7 100%)">
-<div style="position:absolute;left:0;right:0;top:0;height:210px;overflow:hidden">
-<div style="position:absolute;left:50%;top:50px;transform:translateX(-50%);width:400px;height:400px;border-radius:50%;background:radial-gradient(circle at 50% 62%,#FBE9A8,#F8D66B 60%,#F2BE4E)"></div>
-<div style="position:absolute;left:32px;top:90px;font:600 15px 'Quicksand',sans-serif;color:#FDF7E7;animation:twinkle 3.4s ease-in-out infinite">+</div>
-<div style="position:absolute;left:74px;top:136px;font:600 11px 'Quicksand',sans-serif;color:#FDF7E7;animation:twinkle 4.2s ease-in-out .6s infinite">+</div>
-<div style="position:absolute;right:42px;top:110px;font:600 13px 'Quicksand',sans-serif;color:#FDF7E7;animation:twinkle 3.8s ease-in-out 1.2s infinite">+</div>
-<div style="position:absolute;right:86px;top:76px;font:600 10px 'Quicksand',sans-serif;color:#FDF7E7;animation:twinkle 4.6s ease-in-out .3s infinite">+</div>
+<div style="position:absolute;left:0;right:0;top:0;height:482px;overflow:hidden;background:linear-gradient(180deg,#8FCBE0 0%,#BEE0E8 28%,#C6DEDA 55%,#C6DEDA 96%,#FDF7E7 100%)">
+<div style="position:absolute;left:0;right:0;top:0;height:242px;overflow:hidden">
+<div style="position:absolute;left:50%;top:66px;transform:translateX(-50%);width:400px;height:400px;border-radius:50%;background:radial-gradient(circle at 50% 62%,#FBE9A8,#F8D66B 60%,#F2BE4E)"></div>
+<div style="position:absolute;left:32px;top:106px;font:600 15px 'Quicksand',sans-serif;color:#FDF7E7;animation:twinkle 3.4s ease-in-out infinite">+</div>
+<div style="position:absolute;left:74px;top:152px;font:600 11px 'Quicksand',sans-serif;color:#FDF7E7;animation:twinkle 4.2s ease-in-out .6s infinite">+</div>
+<div style="position:absolute;right:42px;top:126px;font:600 13px 'Quicksand',sans-serif;color:#FDF7E7;animation:twinkle 3.8s ease-in-out 1.2s infinite">+</div>
+<div style="position:absolute;right:86px;top:92px;font:600 10px 'Quicksand',sans-serif;color:#FDF7E7;animation:twinkle 4.6s ease-in-out .3s infinite">+</div>
 </div>
-<div style="position:absolute;left:-26px;top:206px;width:96px;height:34px;border-radius:20px;background:#FDF7E7;opacity:.92"></div>
-<div style="position:absolute;left:14px;top:190px;width:52px;height:38px;border-radius:50%;background:#FDF7E7;opacity:.92"></div>
-<div style="position:absolute;right:-18px;top:212px;width:88px;height:30px;border-radius:18px;background:#FDF7E7;opacity:.9"></div>
-<div style="position:absolute;right:16px;top:198px;width:44px;height:32px;border-radius:50%;background:#FDF7E7;opacity:.9"></div>
-<div style="position:absolute;left:0;right:0;top:210px;height:240px;background:linear-gradient(180deg,#8FCBE0 0%,rgba(143,203,224,.55) 62%,rgba(198,222,218,.25) 86%,rgba(198,222,218,0) 100%)"></div>
-<div style="position:absolute;left:0;right:0;top:210px;height:240px;background:repeating-linear-gradient(180deg,rgba(253,247,231,.34) 0 2px,transparent 2px 10px)"></div>
-<div style="position:absolute;left:0;right:0;top:429px;height:7px;overflow:hidden;background-image:repeating-radial-gradient(circle at 10px 0,rgba(255,255,255,.9) 0 4px,transparent 4px 20px);animation:wave-drift 3.2s linear infinite"></div>
-${hibiscusDeco('hibiscus-l', 'position:absolute;left:-18px;top:calc(26px + env(safe-area-inset-top));width:72px;height:72px;z-index:3', 72, 8, -15, true)}
-${hibiscusDeco('hibiscus-r', 'position:absolute;right:-14px;top:calc(36px + env(safe-area-inset-top));width:58px;height:58px;z-index:3', 58, -14, -15, true)}
-${hibiscusDeco('hibiscus-r', 'position:absolute;right:20px;top:150px;width:34px;height:34px;z-index:2;opacity:.8', 34, 22, 30)}
+<div style="position:absolute;left:-26px;top:238px;width:96px;height:34px;border-radius:20px;background:#FDF7E7;opacity:.92"></div>
+<div style="position:absolute;left:14px;top:222px;width:52px;height:38px;border-radius:50%;background:#FDF7E7;opacity:.92"></div>
+<div style="position:absolute;right:-18px;top:244px;width:88px;height:30px;border-radius:18px;background:#FDF7E7;opacity:.9"></div>
+<div style="position:absolute;right:16px;top:230px;width:44px;height:32px;border-radius:50%;background:#FDF7E7;opacity:.9"></div>
+<div style="position:absolute;left:0;right:0;top:242px;height:240px;background:linear-gradient(180deg,#8FCBE0 0%,rgba(143,203,224,.55) 62%,rgba(198,222,218,.25) 86%,rgba(198,222,218,0) 100%)"></div>
+<div style="position:absolute;left:0;right:0;top:242px;height:240px;background:repeating-linear-gradient(180deg,rgba(253,247,231,.34) 0 2px,transparent 2px 10px)"></div>
+<div style="position:absolute;left:0;right:0;top:461px;height:7px;overflow:hidden;background-image:repeating-radial-gradient(circle at 10px 0,rgba(255,255,255,.9) 0 4px,transparent 4px 20px);animation:wave-drift 3.2s linear infinite"></div>
+${hibiscusDeco('hibiscus-l', 'position:absolute;left:-18px;top:42px;width:72px;height:72px;z-index:3', 72, 8, -15, true)}
+${hibiscusDeco('hibiscus-r', 'position:absolute;right:-14px;top:52px;width:58px;height:58px;z-index:3', 58, -14, -15, true)}
+${hibiscusDeco('hibiscus-r', 'position:absolute;right:20px;top:182px;width:34px;height:34px;z-index:2;opacity:.8', 34, 22, 30)}
 </div>
 </div>
 
-<div style="height:246px"></div>
+<div style="height:278px"></div>
 
-<div style="position:absolute;left:0;right:0;top:calc(88px + env(safe-area-inset-top));z-index:4;display:flex;flex-direction:column;align-items:center;gap:9px">
+<div style="position:absolute;left:0;right:0;top:104px;z-index:4;display:flex;flex-direction:column;align-items:center;gap:9px">
 <div style="display:flex;align-items:center;gap:9px;font-family:'Quicksand',sans-serif;font-weight:700;font-size:18px;letter-spacing:.01em;color:#33304A;margin-top:30px">
 <i class="ph-duotone ph-hand-waving" style="font-size:27px"></i><span>Aloha, Mimi &amp; Wellen</span>
 </div>
@@ -320,7 +320,7 @@ ${SEASHELLS.now}
 
 // ---------- Days tab ----------
 function renderDays() {
-  let html = `<div style="padding:70px 24px 98px;position:relative">
+  let html = `<div style="padding:70px 24px calc(98px + env(safe-area-inset-bottom));position:relative">
 ${tabHeaderHibiscus('days')}
 <div style="padding:0 18px">
 <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:38px;line-height:1;letter-spacing:-.02em;color:#33304A;position:relative;z-index:1">Five days</div>
@@ -370,7 +370,7 @@ function renderMap() {
 <a href="${esc(p.site)}" target="_blank" rel="noreferrer" title="Official website" style="flex:none;display:flex;align-items:center;justify-content:center;width:30px;height:30px;background:#C6DEDA;border-radius:8px"><i class="ph-bold ph-arrow-square-out" style="font-size:14px"></i></a>
 </div>`;
   });
-  return `<div style="padding:70px 24px 98px;position:relative">
+  return `<div style="padding:70px 24px calc(98px + env(safe-area-inset-bottom));position:relative">
 ${tabHeaderHibiscus('map')}
 <div style="padding:0 16px">
 <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:38px;line-height:1;letter-spacing:-.02em;color:#33304A;position:relative;z-index:1">South shore</div>
@@ -463,7 +463,7 @@ ${itemsHtml}
     linksHtml += `<a href="${esc(b.href)}" target="_blank" rel="noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:rgba(253,247,231,.14);color:#FDF7E7;border-radius:8px;padding:9px 13px;font-family:'Quicksand',sans-serif;font-weight:700;font-size:12.5px">${esc(b.label)} <i class="ph-bold ph-arrow-square-out" style="font-size:13px"></i></a>`;
   });
 
-  return `<div style="padding:70px 24px 98px;position:relative">
+  return `<div style="padding:70px 24px calc(98px + env(safe-area-inset-bottom));position:relative">
 ${tabHeaderHibiscus('prep')}
 <div style="padding:0 20px"><div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:38px;line-height:1;letter-spacing:-.02em;color:#33304A;position:relative;z-index:1">Before you go</div></div>
 <div style="display:flex;align-items:center;gap:12px;margin:18px 0 0">
@@ -498,7 +498,7 @@ function renderMore() {
 <i class="ph-bold ph-arrow-right" style="flex:none;font-size:16px;color:${m.arrow}"></i>
 </div>`;
   });
-  return `<div style="padding:70px 24px 98px;position:relative">
+  return `<div style="padding:70px 24px calc(98px + env(safe-area-inset-bottom));position:relative">
 ${tabHeaderHibiscus('more')}
 <div style="padding:0 20px">
 <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:38px;line-height:1;letter-spacing:-.02em;color:#33304A;position:relative;z-index:1">The file</div>
@@ -525,11 +525,11 @@ function renderDetail() {
 <div style="font-size:11.5px;line-height:1.55;color:${tone.bodyInk};margin-top:5px;text-wrap:pretty">${esc(n.body)}</div>
 </div>`;
   });
-  return `<div class="overlay scr" style="position:fixed;inset:0;z-index:20;background:#C6DEDA;overflow-y:auto;padding:0 0 98px">
+  return `<div class="overlay scr" style="position:fixed;inset:0;z-index:20;background:#C6DEDA;overflow-y:auto;padding:0 0 calc(98px + env(safe-area-inset-bottom))">
 <div style="position:relative;height:270px;overflow:hidden">
 <img src="${esc(d.photo.src)}" alt="${esc(d.photo.alt)}" style="width:100%;height:100%;object-fit:cover;display:block">
 <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(51,48,74,.44),rgba(51,48,74,.12) 45%,rgba(198,222,218,.35))"></div>
-<div data-action="day-close" style="position:absolute;left:22px;top:22px;cursor:pointer;background:rgba(253,247,231,.92);border-radius:8px;padding:8px 14px;display:flex;align-items:center;gap:7px;font-family:'Quicksand',sans-serif;font-weight:700;font-size:12.5px;color:#33304A"><i class="ph-bold ph-arrow-left" style="font-size:14px"></i><span>All days</span></div>
+<div data-action="day-close" style="position:absolute;left:22px;top:calc(22px + env(safe-area-inset-top));cursor:pointer;background:rgba(253,247,231,.92);border-radius:8px;padding:8px 14px;display:flex;align-items:center;gap:7px;font-family:'Quicksand',sans-serif;font-weight:700;font-size:12.5px;color:#33304A"><i class="ph-bold ph-arrow-left" style="font-size:14px"></i><span>All days</span></div>
 <div style="position:absolute;left:0;right:0;bottom:0;height:24px;background:repeating-linear-gradient(180deg,rgba(253,247,231,.55) 0 2px,transparent 2px 7px)"></div>
 </div>
 
@@ -561,7 +561,7 @@ function renderSub() {
   else if (state.sub === 'budget') body = renderBudgetSub();
   else if (state.sub === 'culture') body = renderCultureSub();
   else if (state.sub === 'contacts') body = renderContactsSub();
-  return `<div class="overlay scr" style="position:fixed;inset:0;z-index:20;background:#C6DEDA;overflow-y:auto;padding:62px 0 98px">
+  return `<div class="overlay scr" style="position:fixed;inset:0;z-index:20;background:#C6DEDA;overflow-y:auto;padding:62px 0 calc(98px + env(safe-area-inset-bottom))">
 <div style="padding:0 24px">
 <div data-action="sub-close" style="cursor:pointer;display:inline-flex;align-items:center;gap:7px;background:#FDF7E7;border-radius:8px;padding:8px 14px;font-family:'Quicksand',sans-serif;font-weight:700;font-size:12.5px;color:#33304A"><i class="ph-bold ph-arrow-left" style="font-size:14px"></i><span>The file</span></div>
 </div>
@@ -712,7 +712,7 @@ function renderNav() {
     ['map', 'ph-duotone ph-map-trifold', 'Map'], ['prep', 'ph-duotone ph-check-square-offset', 'Prep'],
     ['more', 'ph-duotone ph-folder-open', 'File']
   ];
-  let html = `<div class="nav-bar" style="position:fixed;left:0;right:0;bottom:0;z-index:30;height:70px;padding:10px 24px calc(12px + env(safe-area-inset-bottom));box-sizing:border-box;display:flex;align-items:stretch;gap:2px;background:#FDF7E7;border-top:1.5px solid rgba(51,48,74,.08);max-width:600px;margin:0 auto">`;
+  let html = `<div class="nav-bar" style="position:fixed;left:0;right:0;bottom:0;z-index:30;min-height:76px;padding:16px 24px calc(14px + env(safe-area-inset-bottom));box-sizing:border-box;display:flex;align-items:stretch;gap:2px;background:#FDF7E7;border-top:1.5px solid rgba(51,48,74,.08);max-width:600px;margin:0 auto">`;
   tabs.forEach(([key, icon, label]) => {
     const active = state.tab === key && state.detail == null && state.sub == null;
     html += `<div data-action="tab|${key}" style="flex:1;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:8px;color:${active ? TEAL_D : 'rgba(51,48,74,.55)'}"><i class="${icon}" style="font-size:18px"></i><div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:9.5px">${label}</div></div>`;
