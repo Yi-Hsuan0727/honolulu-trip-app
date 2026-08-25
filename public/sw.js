@@ -1,7 +1,9 @@
-// Minimal service worker: makes the app installable and lets the app shell
-// (markup, styles, fonts, icons) load instantly / offline. API calls always
-// go to the network first since schedule/prep/post data changes.
-const CACHE = 'oahu-trip-shell-v1';
+// Minimal service worker: makes the app installable. The shell (markup,
+// styles, fonts, icons) is cached ONLY as an offline fallback — every load
+// tries the network first, so a fresh deploy is always what you see when
+// you're online. (A cache-first strategy here previously meant browsers
+// got stuck showing whatever version they first cached.)
+const CACHE = 'oahu-trip-shell-v2';
 const SHELL_FILES = [
   '/', '/index.html', '/styles.css', '/app.js', '/manifest.json',
   '/vendor/fonts/quicksand.css', '/vendor/fonts/plus-jakarta-sans.css',
@@ -25,16 +27,15 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
 
-  // API + uploaded photos: always fetch fresh, don't cache (editable, changing data)
+  // API + uploaded photos: always network, never cached (editable, changing data)
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/uploads/')) return;
 
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const network = fetch(event.request).then((res) => {
+    fetch(event.request)
+      .then((res) => {
         if (res.ok) caches.open(CACHE).then((cache) => cache.put(event.request, res.clone()));
         return res;
-      }).catch(() => cached);
-      return cached || network;
-    })
+      })
+      .catch(() => caches.match(event.request))
   );
 });

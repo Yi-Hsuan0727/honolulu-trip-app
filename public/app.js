@@ -942,7 +942,18 @@ async function boot() {
 boot().catch(err => { root.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#33304A">Could not load the trip. ' + esc(err.message) + '</div>'; console.error(err); });
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  window.addEventListener('load', async () => {
+    try {
+      // only reload on controllerchange if a SW was already controlling this page —
+      // the first-ever install also fires controllerchange, and reloading then is pointless
+      const hadController = !!navigator.serviceWorker.controller;
+      const reg = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
+      reg.update().catch(() => {});
+      if (hadController) {
+        navigator.serviceWorker.addEventListener('controllerchange', () => location.reload(), { once: true });
+      }
+    } catch (e) {}
+  });
 }
 
 })();

@@ -1,3 +1,16 @@
+/* Reset — every browser ships different defaults for these; without this,
+   the same markup renders with different spacing/fonts/borders per browser. */
+*,*::before,*::after{box-sizing:border-box}
+html,body,div,span,h1,h2,h3,h4,h5,h6,p,ul,ol,li,figure,figcaption,blockquote,fieldset,legend{margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{line-height:1.15;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+ul,ol{list-style:none}
+img,svg,video,canvas{display:block;max-width:100%}
+button,input,textarea,select{font:inherit;color:inherit;background:none;border:none;border-radius:0;padding:0;margin:0;-webkit-appearance:none;appearance:none}
+button{cursor:pointer}
+a{color:inherit;text-decoration:none;-webkit-tap-highlight-color:transparent}
+* {-webkit-tap-highlight-color:transparent}
+
 html,body{margin:0;padding:0}
 body{background:#a9c6c2;font-family:'Plus Jakarta Sans',system-ui,sans-serif;min-height:100vh}
 a{color:#1D6B63;text-decoration:none}

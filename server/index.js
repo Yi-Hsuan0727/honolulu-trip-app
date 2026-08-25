@@ -14,6 +14,10 @@ app.use('/api', require('./routes/schedule'));
 app.use('/api', require('./routes/prep'));
 
 app.use('/uploads', express.static(uploadsDir));
+app.get('/sw.js', (req, res, next) => {
+  res.set('Cache-Control', 'no-cache');
+  next();
+});
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.use((err, req, res, next) => {
