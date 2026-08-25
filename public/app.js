@@ -243,7 +243,7 @@ function scheduleSectionHtml(dayKey, variant) {
 function renderNow() {
   const day = cache.trip.days[currentDayIndex];
   const dayNum = String(currentDayIndex + 1);
-  return `<div style="background:#FDF7E7;padding-bottom:24px">
+  return `<div style="background:#FDF7E7;padding-bottom:98px">
 <div style="position:relative">
 <div style="position:absolute;inset:0;overflow:hidden;z-index:0;background:#FDF7E7">
 <div style="position:absolute;left:0;right:0;top:0;height:450px;overflow:hidden;background:linear-gradient(180deg,#8FCBE0 0%,#BEE0E8 28%,#C6DEDA 55%,#C6DEDA 96%,#FDF7E7 100%)">
@@ -320,7 +320,7 @@ ${SEASHELLS.now}
 
 // ---------- Days tab ----------
 function renderDays() {
-  let html = `<div style="padding:70px 24px 0;position:relative">
+  let html = `<div style="padding:70px 24px 98px;position:relative">
 ${tabHeaderHibiscus('days')}
 <div style="padding:0 18px">
 <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:38px;line-height:1;letter-spacing:-.02em;color:#33304A;position:relative;z-index:1">Five days</div>
@@ -370,7 +370,7 @@ function renderMap() {
 <a href="${esc(p.site)}" target="_blank" rel="noreferrer" title="Official website" style="flex:none;display:flex;align-items:center;justify-content:center;width:30px;height:30px;background:#C6DEDA;border-radius:8px"><i class="ph-bold ph-arrow-square-out" style="font-size:14px"></i></a>
 </div>`;
   });
-  return `<div style="padding:70px 24px 0;position:relative">
+  return `<div style="padding:70px 24px 98px;position:relative">
 ${tabHeaderHibiscus('map')}
 <div style="padding:0 16px">
 <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:38px;line-height:1;letter-spacing:-.02em;color:#33304A;position:relative;z-index:1">South shore</div>
@@ -463,7 +463,7 @@ ${itemsHtml}
     linksHtml += `<a href="${esc(b.href)}" target="_blank" rel="noreferrer" style="display:inline-flex;align-items:center;gap:6px;background:rgba(253,247,231,.14);color:#FDF7E7;border-radius:8px;padding:9px 13px;font-family:'Quicksand',sans-serif;font-weight:700;font-size:12.5px">${esc(b.label)} <i class="ph-bold ph-arrow-square-out" style="font-size:13px"></i></a>`;
   });
 
-  return `<div style="padding:70px 24px 0;position:relative">
+  return `<div style="padding:70px 24px 98px;position:relative">
 ${tabHeaderHibiscus('prep')}
 <div style="padding:0 20px"><div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:38px;line-height:1;letter-spacing:-.02em;color:#33304A;position:relative;z-index:1">Before you go</div></div>
 <div style="display:flex;align-items:center;gap:12px;margin:18px 0 0">
@@ -498,7 +498,7 @@ function renderMore() {
 <i class="ph-bold ph-arrow-right" style="flex:none;font-size:16px;color:${m.arrow}"></i>
 </div>`;
   });
-  return `<div style="padding:70px 24px 0;position:relative">
+  return `<div style="padding:70px 24px 98px;position:relative">
 ${tabHeaderHibiscus('more')}
 <div style="padding:0 20px">
 <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:38px;line-height:1;letter-spacing:-.02em;color:#33304A;position:relative;z-index:1">The file</div>
@@ -733,7 +733,7 @@ function render() {
   const overlays = (state.detail != null ? renderDetail() : '') + (state.sub != null ? renderSub() : '');
 
   root.innerHTML = `<div class="app-shell">
-<div class="scr" style="flex:1;padding-bottom:90px">${tabContent}</div>
+<div class="scr" style="flex:1">${tabContent}</div>
 ${overlays}
 ${renderNav()}
 </div>`;
