@@ -3,10 +3,10 @@
 // tries the network first, so a fresh deploy is always what you see when
 // you're online. (A cache-first strategy here previously meant browsers
 // got stuck showing whatever version they first cached.)
-const CACHE = 'oahu-trip-shell-v2';
+const CACHE = 'oahu-trip-shell-v3';
 const SHELL_FILES = [
   '/', '/index.html', '/styles.css', '/app.js', '/manifest.json',
-  '/vendor/fonts/quicksand.css', '/vendor/fonts/plus-jakarta-sans.css',
+  '/vendor/fonts/quicksand.css', '/vendor/fonts/plus-jakarta-sans.css', '/vendor/fonts/caveat.css',
   '/vendor/phosphor/duotone/style.css', '/vendor/phosphor/bold/style.css',
   '/vendor/leaflet/leaflet.css', '/vendor/leaflet/leaflet.js',
   '/icons/icon-192.png', '/icons/icon-512.png'

@@ -552,6 +552,15 @@ ${scheduleSectionHtml(dayKey, 'detail')}
 </div>
 
 <div style="padding:16px 24px 0;display:flex;flex-direction:column;gap:11px">${notes}</div>
+
+<div style="padding:18px 24px 4px">
+<div data-action="export-day|${dayKey}" style="cursor:pointer;background:#FDF7E7;border:1.5px dashed rgba(51,48,74,.28);border-radius:8px;padding:11px 20px;display:flex;align-items:center;gap:11px">
+<i class="ph-duotone ph-image-square" style="font-size:20px;color:#E0655F"></i>
+<div style="flex:1;font-family:'Quicksand',sans-serif;font-weight:700;font-size:14.5px;color:#33304A">Save Instagram post</div>
+<i class="ph-bold ph-download-simple" style="font-size:16px;color:rgba(51,48,74,.5)"></i>
+</div>
+<div id="export-status-${dayKey}" style="font-size:11.5px;color:rgba(51,48,74,.5);text-align:center;margin-top:6px"></div>
+</div>
 </div>`;
 }
 
@@ -891,6 +900,7 @@ root.addEventListener('click', (e) => {
     case 'prep-remove': removePrepItem(a); break;
     case 'prep-add': addPrepItem(Number(a)); break;
     case 'refs-toggle': state.showRefs = !state.showRefs; render(); break;
+    case 'export-day': exportDayAsInstagramPost(Number(a)); break;
   }
 });
 
@@ -959,6 +969,210 @@ async function refreshLiveData() {
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshLiveData(); });
 window.addEventListener('focus', refreshLiveData);
 setInterval(refreshLiveData, 25000);
+
+// ---------- Instagram post export (scrapbook-style, 1080x1350) ----------
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('image failed to load: ' + src));
+    img.src = src;
+  });
+}
+
+function wrapCanvasText(ctx, text, maxWidth) {
+  const words = String(text || '').split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    const test = line ? line + ' ' + word : word;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function roundRectPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawImageCover(ctx, img, x, y, w, h) {
+  const ir = img.width / img.height, tr = w / h;
+  let sx, sy, sw, sh;
+  if (ir > tr) { sh = img.height; sw = sh * tr; sx = (img.width - sw) / 2; sy = 0; }
+  else { sw = img.width; sh = sw / tr; sx = 0; sy = (img.height - sh) / 2; }
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+
+function drawStar(ctx, cx, cy, r, color, rotateDeg) {
+  const spikes = 4, inner = r * 0.42;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate((rotateDeg || 0) * Math.PI / 180);
+  ctx.beginPath();
+  for (let i = 0; i < spikes * 2; i++) {
+    const rad = i % 2 === 0 ? r : inner;
+    const ang = (Math.PI / spikes) * i - Math.PI / 2;
+    const x = Math.cos(ang) * rad, y = Math.sin(ang) * rad;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawPolaroid(ctx, { cx, cy, w, h, rotateDeg, img, caption }) {
+  const pad = w * 0.06;
+  const photoH = h * 0.76;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rotateDeg * Math.PI / 180);
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(51,48,74,.35)';
+  ctx.shadowBlur = 26;
+  ctx.shadowOffsetY = 12;
+  ctx.fillStyle = '#FFFFFF';
+  roundRectPath(ctx, -w / 2, -h / 2, w, h, 6);
+  ctx.fill();
+  ctx.restore();
+
+  const photoX = -w / 2 + pad, photoY = -h / 2 + pad, photoW = w - pad * 2, pH = photoH - pad;
+  ctx.save();
+  roundRectPath(ctx, photoX, photoY, photoW, pH, 3);
+  ctx.clip();
+  if (img) drawImageCover(ctx, img, photoX, photoY, photoW, pH);
+  else { ctx.fillStyle = '#EDE7D6'; ctx.fillRect(photoX, photoY, photoW, pH); }
+  ctx.restore();
+
+  if (caption) {
+    ctx.fillStyle = '#33304A';
+    ctx.font = "600 32px 'Caveat', cursive";
+    ctx.textAlign = 'center';
+    const lines = wrapCanvasText(ctx, caption, w - pad * 2).slice(0, 2);
+    const bandTop = photoY + pH, bandBottom = h / 2 - 4;
+    const lineH = 34;
+    const startY = (bandTop + bandBottom) / 2 - ((lines.length - 1) * lineH) / 2 + 10;
+    lines.forEach((ln, i) => ctx.fillText(ln, 0, startY + i * lineH));
+  }
+  ctx.restore();
+}
+
+const POLAROID_LAYOUTS = {
+  1: [{ cx: 540, cy: 770, w: 640, h: 780, rotateDeg: -2 }],
+  2: [
+    { cx: 335, cy: 730, w: 480, h: 600, rotateDeg: -6 },
+    { cx: 745, cy: 790, w: 480, h: 600, rotateDeg: 5 }
+  ],
+  3: [
+    { cx: 300, cy: 630, w: 460, h: 560, rotateDeg: -7 },
+    { cx: 765, cy: 600, w: 440, h: 540, rotateDeg: 6 },
+    { cx: 530, cy: 990, w: 460, h: 560, rotateDeg: -3 }
+  ],
+  4: [
+    { cx: 300, cy: 580, w: 420, h: 520, rotateDeg: -7 },
+    { cx: 765, cy: 555, w: 400, h: 500, rotateDeg: 6 },
+    { cx: 300, cy: 1000, w: 420, h: 520, rotateDeg: 4 },
+    { cx: 765, cy: 1020, w: 400, h: 500, rotateDeg: -5 }
+  ]
+};
+
+async function exportDayAsInstagramPost(dayKey) {
+  const statusEl = document.getElementById('export-status-' + dayKey);
+  const setStatus = (msg) => { if (statusEl) statusEl.textContent = msg; };
+  setStatus('Preparing image…');
+  try {
+    await ensureSchedule(dayKey);
+    const day = cache.trip.days[dayKey];
+    const rows = cache.schedules[dayKey] || [];
+    const posts = [];
+    rows.forEach(r => (r.posts || []).forEach(p => { if (p.imagePath) posts.push(p); }));
+
+    const W = 1080, H = 1350;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#DCEBE7');
+    grad.addColorStop(1, '#F3ECD8');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    // Caveat is only ever used inside <canvas>, never in visible DOM text, so the
+    // browser never triggers loading it from the stylesheet on its own — force it.
+    if (document.fonts && document.fonts.load) {
+      try { await Promise.all(['400', '600', '700'].map(w => document.fonts.load(`${w} 32px 'Caveat'`))); } catch (e) {}
+    }
+
+    drawStar(ctx, 90, 130, 26, SUN, -10);
+    drawStar(ctx, 985, 175, 18, CORAL, 14);
+    drawStar(ctx, 60, 1250, 20, TEAL, 8);
+    drawStar(ctx, 1005, 1270, 16, SUN, -18);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(51,48,74,.55)';
+    ctx.font = "700 30px 'Quicksand', sans-serif";
+    ctx.fillText(`DAY ${day.num}/5 · ${day.dow.toUpperCase()} ${day.date.toUpperCase()}`, W / 2, 110);
+
+    ctx.fillStyle = '#33304A';
+    ctx.font = "700 92px 'Quicksand', sans-serif";
+    ctx.fillText(day.title, W / 2, 210);
+
+    ctx.fillStyle = '#1D6B63';
+    ctx.font = "600 34px 'Quicksand', sans-serif";
+    ctx.fillText(day.local, W / 2, 258);
+
+    let photoSources = posts.slice(0, 4).map(p => ({ src: p.imagePath, caption: p.text }));
+    if (photoSources.length === 0) photoSources = [{ src: day.photo.src, caption: day.sub }];
+
+    const loaded = await Promise.all(photoSources.map(async (p) => {
+      try { return { img: await loadImage(p.src), caption: p.caption }; }
+      catch (e) { return { img: null, caption: p.caption }; }
+    }));
+
+    const layout = POLAROID_LAYOUTS[Math.min(loaded.length, 4)] || POLAROID_LAYOUTS[1];
+    loaded.forEach((item, i) => {
+      const pos = layout[i];
+      if (!pos) return;
+      drawPolaroid(ctx, { cx: pos.cx, cy: pos.cy, w: pos.w, h: pos.h, rotateDeg: pos.rotateDeg, img: item.img, caption: item.caption });
+    });
+
+    ctx.fillStyle = 'rgba(51,48,74,.65)';
+    ctx.font = "700 26px 'Quicksand', sans-serif";
+    ctx.textAlign = 'center';
+    ctx.fillText('Mimi & Wellen · Oʻahu', W / 2, H - 46);
+
+    canvas.toBlob((blob) => {
+      if (!blob) { setStatus('Could not create the image — try again.'); return; }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'oahu-day-' + day.num + '-' + day.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.png';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      setStatus('Saved — check your downloads.');
+    }, 'image/png');
+  } catch (err) {
+    console.error(err);
+    setStatus('Something went wrong creating the image.');
+  }
+}
 
 // ---------- boot ----------
 async function boot() {
