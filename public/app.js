@@ -153,6 +153,7 @@ function scheduleRowHtml(dayKey, row, idx, total, editing, variant) {
 <input value="${esc(row.what)}" placeholder="What" data-field="what" data-row="${row.id}" data-day="${dayKey}" style="width:100%;box-sizing:border-box;border:none;background:transparent;font-family:'Quicksand',sans-serif;font-weight:700;font-size:${whatSize};line-height:1.25;color:${whatColor};padding:0"/>
 <input value="${esc(row.where)}" placeholder="Where" data-field="where" data-row="${row.id}" data-day="${dayKey}" style="width:100%;box-sizing:border-box;border:none;background:transparent;font-size:12.5px;color:rgba(51,48,74,.5);margin-top:2px;padding:0"/>
 </div>
+${row.link ? `<a href="${esc(row.link)}" target="_blank" rel="noreferrer" title="Booking details" style="cursor:pointer;flex:none;color:${TEAL_D};padding-top:1px;display:flex"><i class="ph-bold ph-arrow-square-out" style="font-size:16px"></i></a>` : ''}
 <div data-action="note-toggle|${row.id}|${dayKey}" style="cursor:pointer;flex:none;color:${noteColor};padding-top:1px"><i class="ph-bold ph-plus-circle" style="font-size:16px"></i></div>`;
   if (editing) {
     html += `<div data-action="row-remove|${row.id}|${dayKey}" style="cursor:pointer;flex:none;color:rgba(51,48,74,.32);padding-top:1px"><i class="ph-bold ph-trash" style="font-size:16px"></i></div>`;

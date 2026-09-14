@@ -26,7 +26,7 @@ const router = express.Router();
 function rowWithPosts(item) {
   const posts = db.prepare('SELECT * FROM posts WHERE schedule_item_id = ? ORDER BY position ASC').all(item.id);
   return {
-    id: item.id, time: item.time, what: item.what, where: item.where_text, hi: !!item.highlight,
+    id: item.id, time: item.time, what: item.what, where: item.where_text, hi: !!item.highlight, link: item.link || '',
     posts: posts.map(p => ({ id: p.id, text: p.text, imagePath: p.image_path }))
   };
 }
@@ -40,9 +40,9 @@ router.get('/schedule/:dayKey', (req, res) => {
 router.post('/schedule/:dayKey', (req, res) => {
   const dayKey = Number(req.params.dayKey);
   const maxPos = db.prepare('SELECT COALESCE(MAX(position), -1) AS m FROM schedule_items WHERE day_key = ?').get(dayKey).m;
-  const { time = '', what = 'New item', where = '', hi = false } = req.body || {};
-  const info = db.prepare('INSERT INTO schedule_items (day_key, position, time, what, where_text, highlight) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(dayKey, maxPos + 1, time, what, where, hi ? 1 : 0);
+  const { time = '', what = 'New item', where = '', hi = false, link = '' } = req.body || {};
+  const info = db.prepare('INSERT INTO schedule_items (day_key, position, time, what, where_text, highlight, link) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .run(dayKey, maxPos + 1, time, what, where, hi ? 1 : 0, link || null);
   const item = db.prepare('SELECT * FROM schedule_items WHERE id = ?').get(info.lastInsertRowid);
   res.status(201).json(rowWithPosts(item));
 });
@@ -65,7 +65,8 @@ router.put('/schedule-items/:id', (req, res) => {
   const what = req.body.what !== undefined ? req.body.what : existing.what;
   const where = req.body.where !== undefined ? req.body.where : existing.where_text;
   const highlight = req.body.hi !== undefined ? (req.body.hi ? 1 : 0) : existing.highlight;
-  db.prepare('UPDATE schedule_items SET time = ?, what = ?, where_text = ?, highlight = ? WHERE id = ?').run(time, what, where, highlight, id);
+  const link = req.body.link !== undefined ? (req.body.link || null) : existing.link;
+  db.prepare('UPDATE schedule_items SET time = ?, what = ?, where_text = ?, highlight = ?, link = ? WHERE id = ?').run(time, what, where, highlight, link, id);
   res.json(rowWithPosts(db.prepare('SELECT * FROM schedule_items WHERE id = ?').get(id)));
 });
 

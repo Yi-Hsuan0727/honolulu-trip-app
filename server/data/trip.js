@@ -47,7 +47,7 @@ const DAYS = [
     rows: [
       { time: 'morning', what: 'Breakfast at the hotel', where: 'Included, both travelers' },
       { time: '9:45 am', what: 'Check in for the snorkel tour', where: '1085 Ala Moana Blvd, Suite 104', hi: true },
-      { time: '10:15 am', what: 'Turtle Canyon snorkel tour departs', where: 'Kewalo Basin Harbor · Honolulu Snorkel Co.' },
+      { time: '10:15 am', what: 'Turtle Canyon snorkel tour departs', where: 'Kewalo Basin Harbor · Honolulu Snorkel Co.', link: 'https://fareharbor.com/embeds/book/honolulusnorkelcompany/orders/3a28b307-2d95-477c-81b6-27caec0855e5/?language=en-us' },
       { time: '12:15 pm', what: 'Back on land', where: 'Kewalo Basin Harbor' },
       { time: 'afternoon', what: 'Free — beach, nap, Ala Moana', where: 'Waikīkī' },
       { time: 'evening', what: 'Dinner', where: 'Waikīkī, walk' }
@@ -71,7 +71,7 @@ const DAYS = [
     rows: [
       { time: 'morning', what: 'Free morning — sleep in, breakfast', where: 'Hotel · included, both travelers' },
       { time: '10:55 am', what: 'Pickup at the hotel', where: 'Green awning, Koa Ave entrance', hi: true },
-      { time: '11:00 am', what: 'USS Arizona Memorial Plus City Tour', where: 'Pearl Harbor Visitor Center · Booking #379315930' },
+      { time: '11:00 am', what: 'USS Arizona Memorial Plus City Tour', where: 'Pearl Harbor Visitor Center · Booking #379315930', link: 'https://fareharbor.com/embeds/book/alohatrikke/items/544383/booking/7b5fda83-9959-4798-8fd6-36f279fba6af/' },
       { time: 'mid pm', what: 'Downtown Honolulu stop', where: 'Historic buildings, statues, shops' },
       { time: '4:00 pm', what: 'Tour ends, back to Waikīkī', where: 'Drop-off at the hotel' },
       { time: 'evening', what: 'Quiet dinner', where: 'Waikīkī, walk' }
@@ -117,7 +117,7 @@ const DAYS = [
     ],
     rows: [
       { time: '7:45 am', what: 'Shuttle pickup at the hotel', where: 'Green awning, Koa Ave', hi: true },
-      { time: '8:00 am', what: 'Diamond Head hike', where: '0.8 mi each way · ~560 ft climb · ~1 hr' },
+      { time: '8:00 am', what: 'Diamond Head hike', where: '0.8 mi each way · ~560 ft climb · ~1 hr', link: 'https://fareharbor.com/embeds/book/alohatrikke/items/593452/booking/57b4b3ab-5b4a-4521-81ac-5b61afc4205a/' },
       { time: '10:30 am', what: 'Tour ends, shuttle back', where: 'Waikīkī drop-off' },
       { time: '11:00 am', what: 'Check out, store bags', where: 'Hyatt Regency' },
       { time: 'midday', what: 'Last swim, Kapiʻolani Park, long lunch', where: 'All walkable' },
@@ -134,7 +134,7 @@ const DAYS = [
 ];
 
 const PREP = [
-  { title: 'Do this first', icon: 'ph-bold ph-star', items: ['Book USS Arizona tickets on Recreation.gov', 'Reserve all three Go City attractions in the app', 'Call the Pearl Harbor tour operator — confirm no conflict'] },
+  { title: 'Do this first', icon: 'ph-bold ph-star', items: ['Sign the Turtle Canyon boat passenger waiver (Honolulu Snorkel Co.)', 'Sign the Diamond Head Shuttle Tour waiver', 'Screenshot or save all three FareHarbor booking confirmations offline'] },
   { title: 'Then', icon: 'ph-bold ph-list-checks', items: ['Buy Bishop Museum tickets online for the discount', 'Confirm hotel breakfast covers two people', 'Ask how the $100 resort credit can be spent', 'Request Friday luggage storage', 'Download offline maps for Oʻahu', 'Screenshot every confirmation — service is patchy at Diamond Head', 'Check the surf and weather forecast the week before'] },
   { title: 'Pack — non-negotiable', icon: 'ph-bold ph-suitcase-rolling', items: ['Reef-safe mineral sunscreen (zinc or titanium)', 'Rash guard', 'Closed-toe shoes with grip for Diamond Head', 'Reusable water bottle', 'Photo ID for Pearl Harbor', 'Warm layer, eye mask, earplugs for the red-eye'] },
   { title: 'Water days', icon: 'ph-bold ph-drop', items: ['Two swimsuits — one is always wet', 'Quick-dry towel', 'Dry bag for the boat', 'Motion sickness tablets', 'Waterproof phone pouch'] },

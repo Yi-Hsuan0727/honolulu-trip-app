@@ -57,7 +57,7 @@ async function syncDay(dayIndex) {
     const res = await fetch(`${baseUrl}/api/schedule/${dayIndex}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ time: row.time, what: row.what, where: row.where, hi: !!row.hi })
+      body: JSON.stringify({ time: row.time, what: row.what, where: row.where, hi: !!row.hi, link: row.link || '' })
     });
     if (!res.ok) throw new Error(`POST /api/schedule/${dayIndex} failed: ${res.status}`);
     const created = await res.json();

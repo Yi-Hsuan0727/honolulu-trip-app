@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS schedule_items (
   time TEXT NOT NULL DEFAULT '',
   what TEXT NOT NULL DEFAULT '',
   where_text TEXT NOT NULL DEFAULT '',
-  highlight INTEGER NOT NULL DEFAULT 0
+  highlight INTEGER NOT NULL DEFAULT 0,
+  link TEXT
 );
 
 CREATE TABLE IF NOT EXISTS posts (
@@ -34,14 +35,24 @@ CREATE TABLE IF NOT EXISTS prep_items (
 );
 `);
 
+// Migration: add columns introduced after a database may have already been
+// created (CREATE TABLE IF NOT EXISTS above only affects brand-new tables).
+function migrate() {
+  const columns = db.prepare("PRAGMA table_info(schedule_items)").all().map(c => c.name);
+  if (!columns.includes('link')) {
+    db.exec('ALTER TABLE schedule_items ADD COLUMN link TEXT');
+  }
+}
+migrate();
+
 function seedIfEmpty() {
   const scheduleCount = db.prepare('SELECT COUNT(*) AS n FROM schedule_items').get().n;
   if (scheduleCount === 0) {
-    const insert = db.prepare('INSERT INTO schedule_items (day_key, position, time, what, where_text, highlight) VALUES (?, ?, ?, ?, ?, ?)');
+    const insert = db.prepare('INSERT INTO schedule_items (day_key, position, time, what, where_text, highlight, link) VALUES (?, ?, ?, ?, ?, ?, ?)');
     const tx = db.transaction(() => {
       DAYS.forEach((day, dayKey) => {
         day.rows.forEach((row, i) => {
-          insert.run(dayKey, i, row.time, row.what, row.where, row.hi ? 1 : 0);
+          insert.run(dayKey, i, row.time, row.what, row.where, row.hi ? 1 : 0, row.link || null);
         });
       });
     });
