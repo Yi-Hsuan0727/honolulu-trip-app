@@ -27,8 +27,9 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
 
-  // API + uploaded photos: always network, never cached (editable, changing data)
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/uploads/')) return;
+  // API (includes photo blobs, served from /api/posts/:id/image): always
+  // network, never cached — this is editable, changing data
+  if (url.pathname.startsWith('/api/')) return;
 
   event.respondWith(
     fetch(event.request)

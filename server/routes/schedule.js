@@ -1,128 +1,129 @@
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const crypto = require('crypto');
 const db = require('../db');
 
-const uploadsDir = path.join(__dirname, '..', 'uploads');
-fs.mkdirSync(uploadsDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname || '').slice(0, 10);
-    cb(null, crypto.randomBytes(16).toString('hex') + ext);
-  }
-});
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 12 * 1024 * 1024 },
   fileFilter: (req, file, cb) => cb(null, /^image\//.test(file.mimetype))
 });
 
 const router = express.Router();
 
-function rowWithPosts(item) {
-  const posts = db.prepare('SELECT * FROM posts WHERE schedule_item_id = ? ORDER BY position ASC').all(item.id);
+async function rowWithPosts(item) {
+  const postsRes = await db.execute('SELECT id, text, image_mime FROM posts WHERE schedule_item_id = ? ORDER BY position ASC', [item.id]);
   return {
     id: item.id, time: item.time, what: item.what, where: item.where_text, hi: !!item.highlight, link: item.link || '',
-    posts: posts.map(p => ({ id: p.id, text: p.text, imagePath: p.image_path }))
+    posts: postsRes.rows.map(p => ({ id: p.id, text: p.text, imagePath: p.image_mime ? `/api/posts/${p.id}/image` : null }))
   };
 }
 
-router.get('/schedule/:dayKey', (req, res) => {
-  const dayKey = Number(req.params.dayKey);
-  const items = db.prepare('SELECT * FROM schedule_items WHERE day_key = ? ORDER BY position ASC').all(dayKey);
-  res.json(items.map(rowWithPosts));
+router.get('/schedule/:dayKey', async (req, res, next) => {
+  try {
+    const dayKey = Number(req.params.dayKey);
+    const items = (await db.execute('SELECT * FROM schedule_items WHERE day_key = ? ORDER BY position ASC', [dayKey])).rows;
+    res.json(await Promise.all(items.map(rowWithPosts)));
+  } catch (err) { next(err); }
 });
 
-router.post('/schedule/:dayKey', (req, res) => {
-  const dayKey = Number(req.params.dayKey);
-  const maxPos = db.prepare('SELECT COALESCE(MAX(position), -1) AS m FROM schedule_items WHERE day_key = ?').get(dayKey).m;
-  const { time = '', what = 'New item', where = '', hi = false, link = '' } = req.body || {};
-  const info = db.prepare('INSERT INTO schedule_items (day_key, position, time, what, where_text, highlight, link) VALUES (?, ?, ?, ?, ?, ?, ?)')
-    .run(dayKey, maxPos + 1, time, what, where, hi ? 1 : 0, link || null);
-  const item = db.prepare('SELECT * FROM schedule_items WHERE id = ?').get(info.lastInsertRowid);
-  res.status(201).json(rowWithPosts(item));
+router.post('/schedule/:dayKey', async (req, res, next) => {
+  try {
+    const dayKey = Number(req.params.dayKey);
+    const maxPos = Number((await db.execute('SELECT COALESCE(MAX(position), -1) AS m FROM schedule_items WHERE day_key = ?', [dayKey])).rows[0].m);
+    const { time = '', what = 'New item', where = '', hi = false, link = '' } = req.body || {};
+    const info = await db.execute(
+      'INSERT INTO schedule_items (day_key, position, time, what, where_text, highlight, link) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [dayKey, maxPos + 1, time, what, where, hi ? 1 : 0, link || null]
+    );
+    const item = (await db.execute('SELECT * FROM schedule_items WHERE id = ?', [Number(info.lastInsertRowid)])).rows[0];
+    res.status(201).json(await rowWithPosts(item));
+  } catch (err) { next(err); }
 });
 
-router.put('/schedule/:dayKey/reorder', (req, res) => {
-  const dayKey = Number(req.params.dayKey);
-  const { order } = req.body || {};
-  if (!Array.isArray(order)) return res.status(400).json({ error: 'order must be an array of ids' });
-  const update = db.prepare('UPDATE schedule_items SET position = ? WHERE id = ? AND day_key = ?');
-  const tx = db.transaction(() => order.forEach((id, i) => update.run(i, id, dayKey)));
-  tx();
-  res.json({ ok: true });
+router.put('/schedule/:dayKey/reorder', async (req, res, next) => {
+  try {
+    const dayKey = Number(req.params.dayKey);
+    const { order } = req.body || {};
+    if (!Array.isArray(order)) return res.status(400).json({ error: 'order must be an array of ids' });
+    for (let i = 0; i < order.length; i++) {
+      await db.execute('UPDATE schedule_items SET position = ? WHERE id = ? AND day_key = ?', [i, order[i], dayKey]);
+    }
+    res.json({ ok: true });
+  } catch (err) { next(err); }
 });
 
-router.put('/schedule-items/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const existing = db.prepare('SELECT * FROM schedule_items WHERE id = ?').get(id);
-  if (!existing) return res.status(404).json({ error: 'not found' });
-  const time = req.body.time !== undefined ? req.body.time : existing.time;
-  const what = req.body.what !== undefined ? req.body.what : existing.what;
-  const where = req.body.where !== undefined ? req.body.where : existing.where_text;
-  const highlight = req.body.hi !== undefined ? (req.body.hi ? 1 : 0) : existing.highlight;
-  const link = req.body.link !== undefined ? (req.body.link || null) : existing.link;
-  db.prepare('UPDATE schedule_items SET time = ?, what = ?, where_text = ?, highlight = ?, link = ? WHERE id = ?').run(time, what, where, highlight, link, id);
-  res.json(rowWithPosts(db.prepare('SELECT * FROM schedule_items WHERE id = ?').get(id)));
+router.put('/schedule-items/:id', async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const existing = (await db.execute('SELECT * FROM schedule_items WHERE id = ?', [id])).rows[0];
+    if (!existing) return res.status(404).json({ error: 'not found' });
+    const time = req.body.time !== undefined ? req.body.time : existing.time;
+    const what = req.body.what !== undefined ? req.body.what : existing.what;
+    const where = req.body.where !== undefined ? req.body.where : existing.where_text;
+    const highlight = req.body.hi !== undefined ? (req.body.hi ? 1 : 0) : existing.highlight;
+    const link = req.body.link !== undefined ? (req.body.link || null) : existing.link;
+    await db.execute('UPDATE schedule_items SET time = ?, what = ?, where_text = ?, highlight = ?, link = ? WHERE id = ?', [time, what, where, highlight, link, id]);
+    const item = (await db.execute('SELECT * FROM schedule_items WHERE id = ?', [id])).rows[0];
+    res.json(await rowWithPosts(item));
+  } catch (err) { next(err); }
 });
 
-router.delete('/schedule-items/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const item = db.prepare('SELECT * FROM schedule_items WHERE id = ?').get(id);
-  if (item) {
-    const posts = db.prepare('SELECT image_path FROM posts WHERE schedule_item_id = ?').all(id);
-    posts.forEach(p => removeUpload(p.image_path));
-  }
-  db.prepare('DELETE FROM schedule_items WHERE id = ?').run(id);
-  res.json({ ok: true });
+router.delete('/schedule-items/:id', async (req, res, next) => {
+  try {
+    await db.execute('DELETE FROM schedule_items WHERE id = ?', [Number(req.params.id)]);
+    res.json({ ok: true });
+  } catch (err) { next(err); }
 });
 
-function removeUpload(imagePath) {
-  if (!imagePath) return;
-  const full = path.join(uploadsDir, path.basename(imagePath));
-  fs.unlink(full, () => {});
-}
-
-router.post('/schedule-items/:id/posts', upload.single('image'), (req, res) => {
-  const id = Number(req.params.id);
-  const item = db.prepare('SELECT * FROM schedule_items WHERE id = ?').get(id);
-  if (!item) return res.status(404).json({ error: 'not found' });
-  const count = db.prepare('SELECT COUNT(*) AS n FROM posts WHERE schedule_item_id = ?').get(id).n;
-  if (count >= 3) return res.status(400).json({ error: 'a schedule item can only have 3 posts' });
-  const maxPos = db.prepare('SELECT COALESCE(MAX(position), -1) AS m FROM posts WHERE schedule_item_id = ?').get(id).m;
-  const imagePath = req.file ? '/uploads/' + req.file.filename : null;
-  const text = req.body.text || '';
-  const info = db.prepare('INSERT INTO posts (schedule_item_id, position, text, image_path) VALUES (?, ?, ?, ?)')
-    .run(id, maxPos + 1, text, imagePath);
-  const post = db.prepare('SELECT * FROM posts WHERE id = ?').get(info.lastInsertRowid);
-  res.status(201).json({ id: post.id, text: post.text, imagePath: post.image_path });
+router.post('/schedule-items/:id/posts', upload.single('image'), async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const item = (await db.execute('SELECT * FROM schedule_items WHERE id = ?', [id])).rows[0];
+    if (!item) return res.status(404).json({ error: 'not found' });
+    const count = Number((await db.execute('SELECT COUNT(*) AS n FROM posts WHERE schedule_item_id = ?', [id])).rows[0].n);
+    if (count >= 3) return res.status(400).json({ error: 'a schedule item can only have 3 posts' });
+    const maxPos = Number((await db.execute('SELECT COALESCE(MAX(position), -1) AS m FROM posts WHERE schedule_item_id = ?', [id])).rows[0].m);
+    const text = req.body.text || '';
+    const imageData = req.file ? req.file.buffer : null;
+    const imageMime = req.file ? req.file.mimetype : null;
+    const info = await db.execute(
+      'INSERT INTO posts (schedule_item_id, position, text, image_data, image_mime) VALUES (?, ?, ?, ?, ?)',
+      [id, maxPos + 1, text, imageData, imageMime]
+    );
+    const postId = Number(info.lastInsertRowid);
+    res.status(201).json({ id: postId, text, imagePath: imageMime ? `/api/posts/${postId}/image` : null });
+  } catch (err) { next(err); }
 });
 
-router.put('/posts/:id', upload.single('image'), (req, res) => {
-  const id = Number(req.params.id);
-  const existing = db.prepare('SELECT * FROM posts WHERE id = ?').get(id);
-  if (!existing) return res.status(404).json({ error: 'not found' });
-  const text = req.body.text !== undefined ? req.body.text : existing.text;
-  let imagePath = existing.image_path;
-  if (req.file) {
-    removeUpload(existing.image_path);
-    imagePath = '/uploads/' + req.file.filename;
-  }
-  db.prepare('UPDATE posts SET text = ?, image_path = ? WHERE id = ?').run(text, imagePath, id);
-  const post = db.prepare('SELECT * FROM posts WHERE id = ?').get(id);
-  res.json({ id: post.id, text: post.text, imagePath: post.image_path });
+router.put('/posts/:id', upload.single('image'), async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const existing = (await db.execute('SELECT * FROM posts WHERE id = ?', [id])).rows[0];
+    if (!existing) return res.status(404).json({ error: 'not found' });
+    const text = req.body.text !== undefined ? req.body.text : existing.text;
+    const imageData = req.file ? req.file.buffer : existing.image_data;
+    const imageMime = req.file ? req.file.mimetype : existing.image_mime;
+    await db.execute('UPDATE posts SET text = ?, image_data = ?, image_mime = ? WHERE id = ?', [text, imageData, imageMime, id]);
+    res.json({ id, text, imagePath: imageMime ? `/api/posts/${id}/image` : null });
+  } catch (err) { next(err); }
 });
 
-router.delete('/posts/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const post = db.prepare('SELECT * FROM posts WHERE id = ?').get(id);
-  if (post) removeUpload(post.image_path);
-  db.prepare('DELETE FROM posts WHERE id = ?').run(id);
-  res.json({ ok: true });
+router.delete('/posts/:id', async (req, res, next) => {
+  try {
+    await db.execute('DELETE FROM posts WHERE id = ?', [Number(req.params.id)]);
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+router.get('/posts/:id/image', async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const post = (await db.execute('SELECT image_data, image_mime FROM posts WHERE id = ?', [id])).rows[0];
+    if (!post || !post.image_data) return res.status(404).end();
+    res.set('Content-Type', post.image_mime || 'application/octet-stream');
+    res.set('Cache-Control', 'private, max-age=31536000, immutable');
+    res.send(Buffer.from(post.image_data));
+  } catch (err) { next(err); }
 });
 
 module.exports = router;

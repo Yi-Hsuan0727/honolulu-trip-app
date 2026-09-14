@@ -1,9 +1,6 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
-
-const uploadsDir = path.join(__dirname, 'uploads');
-fs.mkdirSync(uploadsDir, { recursive: true });
+const db = require('./db');
 
 const app = express();
 app.use(express.json());
@@ -13,7 +10,6 @@ app.use('/api', require('./routes/trip'));
 app.use('/api', require('./routes/schedule'));
 app.use('/api', require('./routes/prep'));
 
-app.use('/uploads', express.static(uploadsDir));
 app.get('/sw.js', (req, res, next) => {
   res.set('Cache-Control', 'no-cache');
   next();
@@ -26,4 +22,6 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Honolulu trip app listening on http://localhost:${PORT}`));
+db.ready
+  .then(() => app.listen(PORT, () => console.log(`Honolulu trip app listening on http://localhost:${PORT}`)))
+  .catch((err) => { console.error('Failed to start: database not ready.', err); process.exit(1); });

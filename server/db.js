@@ -1,76 +1,95 @@
-const path = require('path');
-const Database = require('better-sqlite3');
+const { createClient } = require('@libsql/client');
 const { DAYS, PREP } = require('./data/trip');
 
-const db = new Database(path.join(__dirname, 'trip.db'));
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+// Turso (or any libSQL-compatible URL) in production; falls back to a local
+// file for development/testing so this works without cloud credentials.
+// This lives on Turso — not the app server's own disk — specifically because
+// free hosting tiers (e.g. Render's free plan) don't guarantee local disk
+// survives a restart, which happens automatically and often. A database that
+// lives somewhere else survives that regardless of what happens to the app
+// server itself.
+const url = process.env.TURSO_DATABASE_URL || 'file:' + require('path').join(__dirname, 'trip.local.db');
+const authToken = process.env.TURSO_AUTH_TOKEN;
 
-db.exec(`
-CREATE TABLE IF NOT EXISTS schedule_items (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  day_key INTEGER NOT NULL,
-  position INTEGER NOT NULL,
-  time TEXT NOT NULL DEFAULT '',
-  what TEXT NOT NULL DEFAULT '',
-  where_text TEXT NOT NULL DEFAULT '',
-  highlight INTEGER NOT NULL DEFAULT 0,
-  link TEXT
-);
-
-CREATE TABLE IF NOT EXISTS posts (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  schedule_item_id INTEGER NOT NULL REFERENCES schedule_items(id) ON DELETE CASCADE,
-  position INTEGER NOT NULL,
-  text TEXT NOT NULL DEFAULT '',
-  image_path TEXT
-);
-
-CREATE TABLE IF NOT EXISTS prep_items (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  group_index INTEGER NOT NULL,
-  position INTEGER NOT NULL,
-  label TEXT NOT NULL,
-  done INTEGER NOT NULL DEFAULT 0
-);
-`);
-
-// Migration: add columns introduced after a database may have already been
-// created (CREATE TABLE IF NOT EXISTS above only affects brand-new tables).
-function migrate() {
-  const columns = db.prepare("PRAGMA table_info(schedule_items)").all().map(c => c.name);
-  if (!columns.includes('link')) {
-    db.exec('ALTER TABLE schedule_items ADD COLUMN link TEXT');
-  }
+if (!process.env.TURSO_DATABASE_URL) {
+  // Loud on purpose: this fallback is meant for local development only. If a
+  // deployed instance ever hits this, it's silently back to storing data on
+  // disk that the host can wipe on restart — the exact bug this file exists
+  // to prevent — so make sure it shows up in the hosting platform's logs.
+  console.warn(
+    '\n*** TURSO_DATABASE_URL is not set — using a local SQLite file instead. ***\n' +
+    'This is expected for local development. If you are seeing this in a deployed\n' +
+    "environment's logs, set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN there — otherwise\n" +
+    'data will not survive the host restarting this service.\n'
+  );
 }
-migrate();
 
-function seedIfEmpty() {
-  const scheduleCount = db.prepare('SELECT COUNT(*) AS n FROM schedule_items').get().n;
+const client = createClient(authToken ? { url, authToken } : { url });
+
+async function execute(sql, args) {
+  await ready;
+  return client.execute(args !== undefined ? { sql, args } : sql);
+}
+
+async function init() {
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS schedule_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      day_key INTEGER NOT NULL,
+      position INTEGER NOT NULL,
+      time TEXT NOT NULL DEFAULT '',
+      what TEXT NOT NULL DEFAULT '',
+      where_text TEXT NOT NULL DEFAULT '',
+      highlight INTEGER NOT NULL DEFAULT 0,
+      link TEXT
+    )
+  `);
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS posts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      schedule_item_id INTEGER NOT NULL REFERENCES schedule_items(id) ON DELETE CASCADE,
+      position INTEGER NOT NULL,
+      text TEXT NOT NULL DEFAULT '',
+      image_data BLOB,
+      image_mime TEXT
+    )
+  `);
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS prep_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      group_index INTEGER NOT NULL,
+      position INTEGER NOT NULL,
+      label TEXT NOT NULL,
+      done INTEGER NOT NULL DEFAULT 0
+    )
+  `);
+
+  const scheduleCount = Number((await client.execute('SELECT COUNT(*) AS n FROM schedule_items')).rows[0].n);
   if (scheduleCount === 0) {
-    const insert = db.prepare('INSERT INTO schedule_items (day_key, position, time, what, where_text, highlight, link) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    const tx = db.transaction(() => {
-      DAYS.forEach((day, dayKey) => {
-        day.rows.forEach((row, i) => {
-          insert.run(dayKey, i, row.time, row.what, row.where, row.hi ? 1 : 0, row.link || null);
+    for (const [dayKey, day] of DAYS.entries()) {
+      for (const [i, row] of day.rows.entries()) {
+        await client.execute({
+          sql: 'INSERT INTO schedule_items (day_key, position, time, what, where_text, highlight, link) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          args: [dayKey, i, row.time, row.what, row.where, row.hi ? 1 : 0, row.link || null]
         });
-      });
-    });
-    tx();
+      }
+    }
   }
 
-  const prepCount = db.prepare('SELECT COUNT(*) AS n FROM prep_items').get().n;
+  const prepCount = Number((await client.execute('SELECT COUNT(*) AS n FROM prep_items')).rows[0].n);
   if (prepCount === 0) {
-    const insert = db.prepare('INSERT INTO prep_items (group_index, position, label, done) VALUES (?, ?, ?, 0)');
-    const tx = db.transaction(() => {
-      PREP.forEach((group, gi) => {
-        group.items.forEach((label, i) => insert.run(gi, i, label));
-      });
-    });
-    tx();
+    for (const [gi, group] of PREP.entries()) {
+      for (const [i, label] of group.items.entries()) {
+        await client.execute({
+          sql: 'INSERT INTO prep_items (group_index, position, label, done) VALUES (?, ?, ?, 0)',
+          args: [gi, i, label]
+        });
+      }
+    }
   }
 }
 
-seedIfEmpty();
+const ready = init();
+ready.catch((err) => console.error('Database init failed:', err.message));
 
-module.exports = db;
+module.exports = { client, execute, ready };
