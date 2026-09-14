@@ -35,47 +35,51 @@ const DAYS = [
     ]
   },
   {
-    num: '2', dow: 'Tue', date: 'Oct 13', title: 'Turtle Canyon', local: 'honu', eng: 'Snorkel cruise',
+    num: '2', dow: 'Tue', date: 'Oct 13', title: 'Turtle Canyon', local: 'honu', eng: 'Snorkel tour',
     photo: PHOTOS.lifeguard, icon: 'ph-bold ph-sailboat',
-    sub: 'Boat leaves at nine. The afternoon is deliberately empty.',
-    intro: 'Honu — green sea turtles — are protected under federal law. Look, do not touch, do not chase, do not feed. Roughly ten feet of berth in the water. The crew will brief you; follow it.',
-    alert: { tag: 'Before boarding', body: 'Motion sickness tablets an hour ahead, not on the water. Dry bag, towel, and mineral sunscreen applied twenty minutes prior.' },
+    sub: 'Booked: 10:15 a.m. with Honolulu Snorkel Co. Check in 30 minutes early.',
+    intro: 'Honu — green sea turtles — are protected under federal law. Look, do not touch, do not chase, do not feed. Roughly ten feet of berth in the water. The crew will brief you; follow it. Wetsuits and a locker are already booked and paid for.',
+    alert: { tag: 'Check in 30 min early', body: 'Arrive by 9:45 a.m. at 1085 Ala Moana Blvd, Suite 104 — that’s the office, not the dock. Sign the boat passenger waiver before you go, and bring your own reef-safe mineral sunscreen; none is sold on site.' },
     sites: [
-      { label: 'Go City Oʻahu', href: 'https://gocity.com/oahu/en-us' },
+      { label: 'Honolulu Snorkel Co.', href: 'https://honolulusnorkelcompany.com' },
       { label: 'Kewalo Basin Harbor', href: 'https://kewalobasinharbor.com' }
     ],
     rows: [
       { time: 'morning', what: 'Breakfast at the hotel', where: 'Included, both travelers' },
-      { time: '9:00 am', what: 'Turtle Canyon snorkel cruise', where: 'Kewalo Basin Harbor · rideshare 12 min, ~$12', hi: true },
-      { time: '11:00 am', what: 'Back on land', where: 'Kewalo Basin' },
+      { time: '9:45 am', what: 'Check in for the snorkel tour', where: '1085 Ala Moana Blvd, Suite 104', hi: true },
+      { time: '10:15 am', what: 'Turtle Canyon snorkel tour departs', where: 'Kewalo Basin Harbor · Honolulu Snorkel Co.' },
+      { time: '12:15 pm', what: 'Back on land', where: 'Kewalo Basin Harbor' },
       { time: 'afternoon', what: 'Free — beach, nap, Ala Moana', where: 'Waikīkī' },
       { time: 'evening', what: 'Dinner', where: 'Waikīkī, walk' }
     ],
     notes: [
-      { tag: 'On the boat', icon: 'ph-bold ph-first-aid-kit', body: 'Motion sickness tablets an hour before boarding, not on the water. Dry bag, towel, and mineral sunscreen applied twenty minutes prior.', tone: 'teal' },
-      { tag: 'Confirm first', icon: 'ph-bold ph-clock-countdown', body: 'Exact departure time and harbor slip live in the Go City app. Arrive thirty minutes early.', tone: 'sun' }
+      { tag: 'Sign the waiver', icon: 'ph-bold ph-file-text', body: 'Every guest, including minors, signs the boat passenger waiver before boarding — do it from the confirmation email ahead of time to skip the line.', tone: 'teal' },
+      { tag: 'No full-face masks', icon: 'ph-bold ph-prohibit', body: 'Wetsuits and a locker are already booked and paid for ($29.90 total, Booking #379314728). If you bring your own gear, full-face snorkel masks aren’t allowed for safety.', tone: 'coral' },
+      { tag: 'Parking & check-in', icon: 'ph-bold ph-map-pin', body: 'Two lots flank the harbor at $1–3/hour — Diamond Parking enforces strictly, so pay up. Check in at Suite 104, not the boat. Easy to get turned around in the harbor — call (808) 556-7557 if you can’t find it.', tone: 'sun' }
     ]
   },
   {
-    num: '3', dow: 'Wed', date: 'Oct 14', title: 'Pearl Harbor', local: 'Puʻuloa', eng: 'USS Arizona Memorial',
+    num: '3', dow: 'Wed', date: 'Oct 14', title: 'Pearl Harbor', local: 'Puʻuloa', eng: 'USS Arizona Memorial Plus City Tour',
     photo: PHOTOS.coast, icon: 'ph-bold ph-flag',
-    sub: 'A long, sober morning. The afternoon stays empty by design.',
-    intro: 'Puʻuloa — long water — is the Hawaiian name for the harbor, once ringed by fishponds. The Arizona program runs forty-five minutes and the tone is set the moment you arrive.',
-    alert: { tag: 'Before you walk out', body: 'Pearl Harbor admits no bags of any kind — no purse, backpack, or camera bag. Phone, wallet, ID, camera. Nothing else.' },
+    sub: 'Booked: pickup 10:55 a.m., tour 11–4. A free morning first, then a full afternoon.',
+    intro: 'Puʻuloa — long water — is the Hawaiian name for the harbor, once ringed by fishponds. The Arizona program runs forty-five minutes and the tone is set the moment you arrive. This booking bundles it with a short guided tour past Downtown Honolulu on the way back.',
+    alert: { tag: 'Before you walk out', body: 'Pearl Harbor admits no bags of any kind — no purse, backpack, or camera bag. Phone, wallet, a slim wallet (no clutches), ID, camera. Pickup is 10:55 a.m. under the green awning on Koa Ave, not the main lobby.' },
     sites: [
       { label: 'NPS · Pearl Harbor', href: 'https://www.nps.gov/valr/index.htm' },
       { label: 'Book the memorial', href: 'https://www.recreation.gov/ticket/facility/233338' }
     ],
     rows: [
-      { time: '6:45 am', what: 'Depart hotel', where: 'Tour coach pickup or rideshare' },
-      { time: '8:00 am', what: 'USS Arizona Memorial program', where: 'Pearl Harbor Visitor Center · ~45 min', hi: true },
-      { time: 'late am', what: 'Pearl Harbor & Hawaiʻi History Tour', where: 'On the Go City pass' },
-      { time: 'mid pm', what: 'Back to Waikīkī', where: 'Tour coach' },
+      { time: 'morning', what: 'Free morning — sleep in, breakfast', where: 'Hotel · included, both travelers' },
+      { time: '10:55 am', what: 'Pickup at the hotel', where: 'Green awning, Koa Ave entrance', hi: true },
+      { time: '11:00 am', what: 'USS Arizona Memorial Plus City Tour', where: 'Pearl Harbor Visitor Center · Booking #379315930' },
+      { time: 'mid pm', what: 'Downtown Honolulu stop', where: 'Historic buildings, statues, shops' },
+      { time: '4:00 pm', what: 'Tour ends, back to Waikīkī', where: 'Drop-off at the hotel' },
       { time: 'evening', what: 'Quiet dinner', where: 'Waikīkī, walk' }
     ],
     notes: [
-      { tag: 'Bag policy', icon: 'ph-bold ph-prohibit', body: 'No bags of any kind enter the visitor center — no purse, backpack, camera bag, or fanny pack. Phone, wallet, ID, camera. Paid storage exists on site but the queue is the real cost.', tone: 'coral' },
-      { tag: 'Resolve in advance', icon: 'ph-bold ph-phone-call', body: 'The Go City tour and the Arizona boat slot are booked separately. Call the operator and confirm they do not collide — the Arizona ticket is the one that cannot flex.', tone: 'sun' },
+      { tag: 'Bag policy', icon: 'ph-bold ph-prohibit', body: 'No bags of any kind enter the visitor center — no purse, backpack, camera bag, or fanny pack. Phone, wallet, ID, camera only. Paid storage is $10/bag if you need it.', tone: 'coral' },
+      { tag: 'Dress code', icon: 'ph-bold ph-t-shirt', body: 'Casual and respectful — sundresses, shorts, and t-shirts are fine. No swimwear, cover-ups, or anything too revealing; it’s a memorial.', tone: 'teal' },
+      { tag: 'Pickup', icon: 'ph-bold ph-clock-countdown', body: 'Meet under the green awning on Koa Ave at 10:55 a.m. — not the lobby. A few minutes early is safer than on time.', tone: 'sun' },
       { tag: 'Respect', icon: 'ph-bold ph-hand-heart', body: '1,177 of the Arizona’s crew died here and many remain aboard. This is a grave site. Keep your voice down; photographs are fine, posing is not.', tone: 'cream' }
     ]
   },
@@ -104,25 +108,27 @@ const DAYS = [
   {
     num: '5', dow: 'Fri', date: 'Oct 16', title: 'Diamond Head', local: 'Lēʻahi', eng: 'The crater, then home',
     photo: PHOTOS.crater, icon: 'ph-bold ph-mountains',
-    sub: 'The flight is 8:40 p.m. Friday is a full day, not a travel day.',
-    intro: 'Lēʻahi is the brow of the ʻahi fish. The Western name came from British sailors who mistook calcite crystals in the rock for diamonds.',
-    alert: { tag: 'The hike', body: 'Almost no shade and the crater bowl holds heat, so go early. Closed-toe shoes, a hat, and more water than you think.' },
+    sub: 'Shuttle leaves 7:45 a.m. sharp. The flight is 8:40 p.m. — a full day, not a travel day.',
+    intro: 'Lēʻahi is the brow of the ʻahi fish. The Western name came from British sailors who mistook calcite crystals in the rock for diamonds. This tour rides a shuttle both ways — no self-driving or rideshare to the trailhead.',
+    alert: { tag: 'The hike', body: 'Closed-toe shoes are required, not just recommended — no sandals or flip-flops. Bring your own water and a light snack; nothing is sold at the crater. Shuttle-only both ways: no self-driving or rideshare.' },
     sites: [
       { label: 'Diamond Head State Monument', href: 'https://dlnr.hawaii.gov/dsp/parks/oahu/diamond-head-state-monument/' },
       { label: 'Honolulu Zoo', href: 'https://www.honoluluzoo.org' }
     ],
     rows: [
-      { time: '6:45 am', what: 'Go City shuttle pickup', where: 'Waikīkī' },
-      { time: '7:15 am', what: 'Diamond Head hike', where: '0.8 mi each way · ~560 ft climb · 1.5–2 hrs', hi: true },
-      { time: '10:00 am', what: 'Back in Waikīkī', where: 'Shuttle' },
+      { time: '7:45 am', what: 'Shuttle pickup at the hotel', where: 'Green awning, Koa Ave', hi: true },
+      { time: '8:00 am', what: 'Diamond Head hike', where: '0.8 mi each way · ~560 ft climb · ~1 hr' },
+      { time: '10:30 am', what: 'Tour ends, shuttle back', where: 'Waikīkī drop-off' },
       { time: '11:00 am', what: 'Check out, store bags', where: 'Hyatt Regency' },
       { time: 'midday', what: 'Last swim, Kapiʻolani Park, long lunch', where: 'All walkable' },
       { time: '5:45 pm', what: 'Collect bags, transfer to HNL', where: 'Package transfer' },
       { time: '8:40 pm', what: 'Depart HNL', where: 'AA 144 to LAX' }
     ],
     notes: [
-      { tag: 'The hike', icon: 'ph-bold ph-sneaker', body: 'Paved, then uneven, with stairs and a tunnel near the top. Almost no shade and the crater bowl holds heat, so go early. Closed-toe shoes, a hat, more water than you think.', tone: 'coral' },
-      { tag: 'Six free hours', icon: 'ph-bold ph-park', body: 'Showered and free by noon. Kapiʻolani Park, the Honolulu Zoo, the Waikīkī Aquarium, or the beach with your bags in storage. Eat a real dinner before the airport.', tone: 'teal' }
+      { tag: 'The hike', icon: 'ph-bold ph-sneaker', body: 'Paved, then uneven, with stairs and a narrow tunnel near the top. Steep and almost no shade — the crater bowl holds heat. Closed-toe shoes are required; bring more water than you think, plus a hat.', tone: 'coral' },
+      { tag: 'Shuttle only', icon: 'ph-bold ph-bus', body: 'This tour is shuttle-only both ways — no self-driving, Uber, or taxi to the trailhead, and no pickup along the route. Be at the green awning by 7:45 a.m.; the driver won’t wait.', tone: 'sun' },
+      { tag: 'Sign the waiver', icon: 'ph-bold ph-file-text', body: 'Sign the tour waiver from the confirmation email before you go.', tone: 'teal' },
+      { tag: 'Six free hours', icon: 'ph-bold ph-park', body: 'Showered and free by 11. Kapiʻolani Park, the Honolulu Zoo, the Waikīkī Aquarium, or the beach with your bags in storage. Eat a real dinner before the airport.', tone: 'cream' }
     ]
   }
 ];
@@ -165,7 +171,8 @@ const PREPAID = [
   { k: 'Costco Travel package', v: '$3,010.26' },
   { k: 'Taxes and fees', v: '$367.95' },
   { k: 'Travel insurance', v: '$152.02' },
-  { k: 'Go City pass, 2 adults', v: '$238.00' }
+  { k: 'Go City pass, 2 adults', v: '$238.00' },
+  { k: 'Turtle Canyon snorkel tour, 2', v: '$29.90' }
 ];
 
 const GROUND = [
@@ -180,7 +187,9 @@ const GROUND = [
 const REFS = [
   { k: 'Flight confirmation', v: 'LPROPF' },
   { k: 'Insurance policy', v: '723ZD300491' },
-  { k: 'Go City order', v: '2438517889' }
+  { k: 'Go City order', v: '2438517889' },
+  { k: 'Pearl Harbor tour', v: '379315930' },
+  { k: 'Snorkel tour', v: '379314728' }
 ];
 
 const WORDS = [
@@ -211,6 +220,8 @@ const CONTACTS = [
   { who: 'Emergency', note: 'Police, fire, medical', num: '911', href: 'tel:911', icon: 'ph-duotone ph-siren', tone: 'coral' },
   { who: 'Ocean Safety', note: 'Lifeguard dispatch', num: '808 922-3888', href: 'tel:+18089223888', icon: 'ph-duotone ph-lifebuoy' },
   { who: 'Hyatt Regency Waikiki', note: '2424 Kalākaua Ave', num: '808 923-1234', href: 'tel:+18089231234', icon: 'ph-duotone ph-bed' },
+  { who: 'Go City Tours', note: 'Pearl Harbor & Diamond Head bookings', num: '808 926-3090', href: 'tel:+18089263090', icon: 'ph-duotone ph-ticket' },
+  { who: 'Honolulu Snorkel Co.', note: 'Turtle Canyon tour · 7am–5pm', num: '808 556-7557', href: 'tel:+18085567557', icon: 'ph-duotone ph-fish-simple' },
   { who: 'Cover-More', note: 'Travel insurance · policy 723ZD300491', num: '844 246-8470', href: 'tel:+18442468470', icon: 'ph-duotone ph-shield-check' },
   { who: 'Costco Travel', note: 'Package and transfers', num: '866 921-7925', href: 'tel:+18669217925', icon: 'ph-duotone ph-briefcase' },
   { who: 'American Airlines', note: 'No change fee · $200 to cancel', num: '800 433-7300', href: 'tel:+18004337300', icon: 'ph-duotone ph-airplane-tilt' },
@@ -220,6 +231,7 @@ const CONTACTS = [
 const BOOK_LINKS = [
   { label: 'Recreation.gov', href: 'https://www.recreation.gov/ticket/facility/233338' },
   { label: 'Go City Oʻahu', href: 'https://gocity.com/oahu/en-us' },
+  { label: 'Honolulu Snorkel Co.', href: 'https://honolulusnorkelcompany.com' },
   { label: 'Bishop Museum', href: 'https://www.bishopmuseum.org' },
   { label: 'Diamond Head', href: 'https://dlnr.hawaii.gov/dsp/parks/oahu/diamond-head-state-monument/' },
   { label: 'Go Hawaiʻi', href: 'https://www.gohawaii.com/islands/oahu' }

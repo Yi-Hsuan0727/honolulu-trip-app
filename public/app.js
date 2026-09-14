@@ -628,7 +628,7 @@ function renderBudgetSub() {
 <div style="background:#FDF7E7;border-radius:8px;padding:16px 18px 6px;margin-top:16px">
 <div style="display:flex;align-items:center;gap:7px;font-family:'Quicksand',sans-serif;font-weight:700;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:rgba(51,48,74,.45)"><i class="ph-bold ph-receipt" style="font-size:13px"></i><span>Prepaid</span></div>
 ${prepaid}
-<div style="display:flex;justify-content:space-between;gap:16px;padding:13px 0 15px;font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;color:#1D6B63"><div>Total prepaid</div><div>$3,768.23</div></div>
+<div style="display:flex;justify-content:space-between;gap:16px;padding:13px 0 15px;font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;color:#1D6B63"><div>Total prepaid</div><div>$3,798.13</div></div>
 </div>
 <div style="background:#FDF7E7;border-radius:8px;padding:16px 18px 6px;margin-top:11px">
 <div style="display:flex;align-items:center;gap:7px;font-family:'Quicksand',sans-serif;font-weight:700;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:rgba(51,48,74,.45)"><i class="ph-bold ph-wallet" style="font-size:13px"></i><span>On the ground</span></div>
@@ -637,7 +637,7 @@ ${ground}
 </div>
 <div style="background:#2E7D75;border-radius:8px;padding:20px;margin-top:11px">
 <div style="display:flex;align-items:center;gap:7px;font-family:'Quicksand',sans-serif;font-weight:700;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:rgba(253,247,231,.75)"><i class="ph-bold ph-coins" style="font-size:13px"></i><span>All in</span></div>
-<div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:40px;line-height:1;color:#F8D66B;margin-top:8px">≈ $4,650</div>
+<div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:40px;line-height:1;color:#F8D66B;margin-top:8px">≈ $4,680</div>
 <div style="font-size:13px;line-height:1.6;color:rgba(253,247,231,.8);margin-top:10px;text-wrap:pretty">Offset by the $100 resort credit and a waived resort fee worth roughly $200 across four nights. Spend the credit — it does not refund.</div>
 </div>
 <div data-action="refs-toggle" style="cursor:pointer;margin-top:11px;background:#FDF7E7;border-radius:8px;padding:16px 18px">
