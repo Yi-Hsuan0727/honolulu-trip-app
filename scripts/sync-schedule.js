@@ -11,10 +11,11 @@
 // never touches them. Run this after updating trip.js's rows for a day and
 // wanting that reflected on a deployment that's already past its first boot.
 //
-// This deletes and recreates every row for the given day(s), which also
-// deletes any posts (photo/notes) attached to those specific rows — fine for
-// pushing corrected reservation times before the trip, but check with
-// whoever's using the live app first if it's already in daily use.
+// This UPDATES existing rows in place (matched by position/order) rather than
+// deleting and recreating them, specifically so any posts (photo + note)
+// already attached to those rows are preserved — deleting a row cascades to
+// its posts. Only a genuine row-count change adds or removes rows (and only
+// the removed ones lose their posts).
 //
 // Usage:
 //   node scripts/sync-schedule.js <base-url> <dayIndex> [dayIndex...]
@@ -46,14 +47,37 @@ async function syncDay(dayIndex) {
   const existingRes = await fetch(`${baseUrl}/api/schedule/${dayIndex}`);
   if (!existingRes.ok) throw new Error(`GET /api/schedule/${dayIndex} failed: ${existingRes.status}`);
   const existing = await existingRes.json();
+  const newRows = day.rows;
 
-  for (const row of existing) {
-    const delRes = await fetch(`${baseUrl}/api/schedule-items/${row.id}`, { method: 'DELETE' });
-    if (!delRes.ok) throw new Error(`DELETE schedule-items/${row.id} failed: ${delRes.status}`);
-    console.log(`  removed: ${row.time} — ${row.what}`);
+  const shared = Math.min(existing.length, newRows.length);
+
+  for (let i = 0; i < shared; i++) {
+    const row = newRows[i];
+    const target = existing[i];
+    const hasPosts = target.posts && target.posts.length;
+    const res = await fetch(`${baseUrl}/api/schedule-items/${target.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ time: row.time, what: row.what, where: row.where, hi: !!row.hi, link: row.link || '' })
+    });
+    if (!res.ok) throw new Error(`PUT schedule-items/${target.id} failed: ${res.status}`);
+    console.log(`  updated: ${row.time} — ${row.what}${hasPosts ? '  (kept ' + target.posts.length + ' post(s) attached)' : ''}`);
   }
 
-  for (const row of day.rows) {
+  // existing has more rows than the new list — the extras are gone from the
+  // itinerary, so remove them (this does lose any posts attached to *these*
+  // specific rows, unlike the update path above)
+  for (let i = shared; i < existing.length; i++) {
+    const target = existing[i];
+    const delRes = await fetch(`${baseUrl}/api/schedule-items/${target.id}`, { method: 'DELETE' });
+    if (!delRes.ok) throw new Error(`DELETE schedule-items/${target.id} failed: ${delRes.status}`);
+    const hadPosts = target.posts && target.posts.length;
+    console.log(`  removed: ${target.time} — ${target.what}${hadPosts ? '  (also removed ' + target.posts.length + ' post(s) attached to it)' : ''}`);
+  }
+
+  // new list has more rows than existing — append the extras
+  for (let i = shared; i < newRows.length; i++) {
+    const row = newRows[i];
     const res = await fetch(`${baseUrl}/api/schedule/${dayIndex}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
