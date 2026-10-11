@@ -633,8 +633,26 @@ ${scheduleSectionHtml(dayKey, 'detail')}
 <i class="ph-bold ph-download-simple" style="font-size:16px;color:rgba(51,48,74,.5)"></i>
 </div>
 <div id="export-status-${dayKey}" style="font-size:11.5px;color:rgba(51,48,74,.5);text-align:center;margin-top:6px"></div>
+${dayPagerHtml(dayKey)}
 </div>
 </div>`;
+}
+
+// Previous / next day buttons at the bottom of a day page.
+function dayPagerHtml(dayKey) {
+  const days = cache.trip.days;
+  const btn = (idx, dir) => {
+    if (idx < 0 || idx >= days.length) return '<div style="flex:1"></div>';
+    const d = days[idx];
+    const prev = dir === 'prev';
+    const arrow = `<i class="ph-bold ph-arrow-${prev ? 'left' : 'right'}" style="font-size:16px;flex:none"></i>`;
+    const label = `<div style="min-width:0;text-align:${prev ? 'left' : 'right'}">
+<div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;opacity:.75">${prev ? 'Previous day' : 'Next day'}</div>
+<div style="font-size:13.5px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(d.dow)} · ${esc(d.title)}</div>
+</div>`;
+    return `<div data-action="day-open|${idx}" style="flex:1;min-width:0;cursor:pointer;background:${prev ? '#FDF7E7' : '#2E7D75'};color:${prev ? '#33304A' : '#FDF7E7'};border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;font-family:'Quicksand',sans-serif;font-weight:700">${prev ? arrow + label : label + arrow}</div>`;
+  };
+  return `<div style="display:flex;gap:10px;margin-top:6px">${btn(dayKey - 1, 'prev')}${btn(dayKey + 1, 'next')}</div>`;
 }
 
 // ---------- File sub-screens ----------
