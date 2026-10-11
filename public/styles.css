@@ -28,7 +28,7 @@ input,textarea{font-family:inherit}
 .hibiscus-l{animation:sway-l 5.5s ease-in-out infinite;transform-origin:bottom center}
 .hibiscus-r{animation:sway-r 6.2s ease-in-out .4s infinite;transform-origin:bottom center}
 
-.leaflet-tile-pane{filter:sepia(.25) hue-rotate(130deg) saturate(1.3) brightness(1.06) contrast(.96)}
+.leaflet-tile-pane{filter:grayscale(.9) sepia(.3) hue-rotate(120deg) saturate(1.1) brightness(1.04) contrast(.95)}
 .leaflet-control-attribution{font-size:9px!important}
 
 #app{display:flex;justify-content:center;min-height:100vh}

@@ -202,7 +202,6 @@ function postCardHtml(dayKey, rowId, post, pad) {
 <div style="font-size:12px;line-height:1.4;color:rgba(51,48,74,.72);word-break:break-word;overflow-wrap:anywhere">${esc(post.text)}</div>
 <div style="display:flex;gap:10px;margin-top:6px">
 <div data-action="post-edit-start|${post.id}" style="cursor:pointer;display:flex;align-items:center;gap:4px;color:#1D6B63;font-size:11px;font-family:'Quicksand',sans-serif;font-weight:700"><i class="ph-bold ph-pencil-simple" style="font-size:12px"></i>Edit</div>
-<div data-action="post-remove|${post.id}|${rowId}|${dayKey}" style="cursor:pointer;display:flex;align-items:center;gap:4px;color:rgba(51,48,74,.45);font-size:11px;font-family:'Quicksand',sans-serif;font-weight:700"><i class="ph-bold ph-trash" style="font-size:12px"></i>Delete</div>
 </div>
 </div>
 </div>`;
@@ -405,7 +404,7 @@ function initLeaflet() {
   const places = cache.trip.places;
   const mp = places[state.mapPlace];
   leafletMap = L.map(el, { zoomControl: false, attributionControl: true }).setView([mp.lat, mp.lon], 13);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap, © CARTO', maxZoom: 19 }).addTo(leafletMap);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors', maxZoom: 19 }).addTo(leafletMap);
   leafletMarkers = places.map((p, i) => {
     const m = L.marker([p.lat, p.lon], { icon: pinIcon(i === state.mapPlace ? MAP_CORAL : MAP_TEAL, i === state.mapPlace) })
       .addTo(leafletMap).bindPopup('<b>' + esc(p.name) + '</b><br>' + esc(p.addr));
@@ -446,7 +445,6 @@ function renderPrep() {
 <div style="width:21px;height:21px;flex:none;margin-top:1px;border-radius:8px;border:2px solid ${it.done ? TEAL : 'rgba(51,48,74,.28)'};background:${it.done ? TEAL : 'transparent'};color:#FDF7E7;font-family:'Quicksand',sans-serif;font-weight:700;font-size:11px;line-height:18px;text-align:center">${it.done ? '✓' : ''}</div>
 <div style="flex:1;font-size:14px;line-height:1.45;color:${it.done ? 'rgba(51,48,74,.4)' : INK};text-decoration:${it.done ? 'line-through' : 'none'};text-wrap:pretty">${esc(it.label)}</div>
 </div>
-<div data-action="prep-remove|${it.id}" style="cursor:pointer;flex:none;color:rgba(51,48,74,.3);padding-top:3px"><i class="ph-bold ph-x" style="font-size:14px"></i></div>
 </div>`;
     });
     groupsHtml += `<div style="margin-top:14px;background:#FDF7E7;border-radius:8px;padding:18px 20px 6px">
