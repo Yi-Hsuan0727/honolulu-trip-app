@@ -29,21 +29,79 @@ const MORE_STYLE = [
 ];
 
 const TRIP_DATES = ['2026-10-12', '2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16'];
+const TRIP_TZ = 'Pacific/Honolulu';
+// "Today" as the calendar date in Hawaii (YYYY-MM-DD), regardless of the phone's timezone.
+function hawaiiToday() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: TRIP_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+}
 function computeCurrentDayIndex() {
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = hawaiiToday();
   const idx = TRIP_DATES.findIndex(d => d === todayStr);
   if (idx !== -1) return idx;
   return todayStr < TRIP_DATES[0] ? 0 : TRIP_DATES.length - 1;
 }
 
+// ---------- live weather (Open-Meteo, no API key) ----------
+const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast?latitude=21.2765&longitude=-157.8267'
+  + '&current=temperature_2m,weather_code,is_day'
+  + '&daily=weather_code,temperature_2m_max,uv_index_max,sunset'
+  + '&temperature_unit=fahrenheit&timezone=Pacific%2FHonolulu&forecast_days=16';
+// WMO weather code -> [label, day icon, night icon]
+function weatherInfo(code, isDay) {
+  const night = isDay === 0;
+  if (code === 0) return night ? ['Clear', 'ph-moon-stars'] : ['Sunny', 'ph-sun'];
+  if (code === 1 || code === 2) return night ? ['Partly cloudy', 'ph-cloud-moon'] : ['Partly sunny', 'ph-cloud-sun'];
+  if (code === 3) return ['Cloudy', 'ph-cloud'];
+  if (code === 45 || code === 48) return ['Foggy', 'ph-cloud-fog'];
+  if (code >= 51 && code <= 57) return ['Drizzle', 'ph-cloud-rain'];
+  if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return ['Showers', 'ph-cloud-rain'];
+  if (code >= 71 && code <= 77) return ['Snow', 'ph-snowflake'];
+  if (code >= 95) return ['Thunderstorms', 'ph-cloud-lightning'];
+  return ['Weather', 'ph-cloud-sun'];
+}
+function formatSunset(iso) {
+  const m = /T(\d{2}):(\d{2})/.exec(iso || '');
+  if (!m) return null;
+  const h = Number(m[1]);
+  return ((h % 12) || 12) + ':' + m[2] + ' ' + (h >= 12 ? 'pm' : 'am');
+}
+// What the header pill shows for the displayed trip day: live temperature if that day is
+// today in Hawaii, otherwise that day's forecast high.
+function weatherForDay(dayIndex) {
+  const w = cache.weather;
+  if (!w) return null;
+  const date = TRIP_DATES[dayIndex];
+  const i = w.daily.time.indexOf(date);
+  const isToday = date === hawaiiToday();
+  let temp = null, code = null, isDay = 1;
+  if (isToday && w.current) { temp = w.current.temperature_2m; code = w.current.weather_code; isDay = w.current.is_day; }
+  else if (i !== -1) { temp = w.daily.temperature_2m_max[i]; code = w.daily.weather_code[i]; }
+  if (temp == null) return null;
+  const [label, icon] = weatherInfo(code, isDay);
+  return {
+    temp: Math.round(temp), label, icon,
+    uv: i !== -1 && w.daily.uv_index_max[i] != null ? Math.round(w.daily.uv_index_max[i]) : null,
+    sunset: i !== -1 ? formatSunset(w.daily.sunset[i]) : null,
+    live: isToday
+  };
+}
+async function refreshWeather() {
+  try {
+    const res = await fetch(WEATHER_URL);
+    if (!res.ok) return;
+    cache.weather = await res.json();
+    if (!document.activeElement || !/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) render();
+  } catch (e) { /* offline: keep whatever we last had */ }
+}
+
 // ---------- state ----------
 const state = {
   tab: 'now', detail: null, sub: null, mapPlace: 1,
-  editingSchedule: {}, noteOpen: {}, postEditing: {},
+  editingSchedule: {}, noteOpen: {}, postEditing: {}, swipeOpen: {},
   drafts: {}, editDrafts: {}, prepDraft: {}, showRefs: false
 };
-const cache = { trip: null, schedules: {}, prep: null };
-const currentDayIndex = computeCurrentDayIndex();
+const cache = { trip: null, schedules: {}, prep: null, weather: null };
+let currentDayIndex = computeCurrentDayIndex();
 
 let leafletMap = null, leafletMarkers = null;
 const root = document.getElementById('app');
@@ -194,14 +252,21 @@ ${inner}
 </div>`;
 }
 
+const SWIPE_W = 144; // two 72px action buttons: Delete, then Edit on the far right
 function postCardHtml(dayKey, rowId, post, pad) {
   if (!state.postEditing[post.id]) {
-    return `<div style="background:#FDF7E7;border-radius:8px;padding:${pad}px;display:flex;align-items:stretch;gap:${pad}px">
-<div style="flex:0 0 33.3333%;display:flex;min-height:80px;border-radius:6px;overflow:hidden">${post.imagePath ? `<img src="${esc(post.imagePath)}" alt="" style="width:100%;height:100%;object-fit:cover">` : `<div class="post-photo empty" style="width:100%"><i class="ph-duotone ph-camera" style="opacity:.6"></i></div>`}</div>
+    // Swipe the white card left to reveal the Delete and Edit buttons behind it (see swipe handlers below).
+    const open = !!state.swipeOpen[post.id];
+    return `<div style="position:relative;border-radius:8px;overflow:hidden">
+<div style="position:absolute;top:0;right:0;bottom:0;width:${SWIPE_W}px;display:flex;user-select:none;-webkit-user-select:none">
+<div data-action="post-remove|${post.id}|${rowId}|${dayKey}" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:72px;color:#FDF7E7;font-family:'Quicksand',sans-serif;font-weight:700;font-size:11px;background:#E0655F"><i class="ph-bold ph-trash" style="font-size:17px"></i>Delete</div>
+<div data-action="post-edit-start|${post.id}" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:72px;color:#FDF7E7;font-family:'Quicksand',sans-serif;font-weight:700;font-size:11px;background:#2E7D75"><i class="ph-bold ph-pencil-simple" style="font-size:17px"></i>Edit</div>
+</div>
+<div data-swipe-card="${post.id}" style="position:relative;touch-action:pan-y;user-select:none;-webkit-user-select:none;background:#FFFFFF;border-radius:8px;border:1px solid rgba(51,48,74,.08);box-sizing:border-box;padding:${pad}px;display:flex;align-items:stretch;gap:${pad}px;transform:translateX(${open ? -SWIPE_W : 0}px);transition:transform .2s ease">
+<div style="flex:0 0 33.3333%;display:flex;min-height:80px;border-radius:6px;overflow:hidden">${post.imagePath ? `<img src="${esc(post.imagePath)}" alt="" draggable="false" style="width:100%;height:100%;object-fit:cover">` : `<div class="post-photo empty" style="width:100%"><i class="ph-duotone ph-camera" style="opacity:.6"></i></div>`}</div>
 <div style="flex:1 1 66.6667%;display:flex;flex-direction:column;justify-content:space-between;min-width:0">
 <div style="font-size:12px;line-height:1.4;color:rgba(51,48,74,.72);word-break:break-word;overflow-wrap:anywhere">${esc(post.text)}</div>
-<div style="display:flex;gap:10px;margin-top:6px">
-<div data-action="post-edit-start|${post.id}" style="cursor:pointer;display:flex;align-items:center;gap:4px;color:#1D6B63;font-size:11px;font-family:'Quicksand',sans-serif;font-weight:700"><i class="ph-bold ph-pencil-simple" style="font-size:12px"></i>Edit</div>
+
 </div>
 </div>
 </div>`;
@@ -240,6 +305,20 @@ function scheduleSectionHtml(dayKey, variant) {
 }
 
 // ---------- Now tab ----------
+function weatherPillHtml(dayIndex) {
+  const w = weatherForDay(dayIndex);
+  const item = (icon, text) => `<span style="display:flex;align-items:center;gap:4px"><i class="ph-duotone ${icon}" style="font-size:13px;color:#E0655F"></i>${text}</span>`;
+  const parts = [];
+  if (w) {
+    parts.push(item(w.icon, `${w.temp}°${w.live ? '' : ' high'} · ${esc(w.label)}`));
+    if (w.uv != null) parts.push(item('ph-sun', `UV ${w.uv}`));
+    if (w.sunset) parts.push(item('ph-sun-horizon', esc(w.sunset)));
+  } else {
+    parts.push(item('ph-thermometer-simple', 'Loading weather…'));
+  }
+  return `<div style="display:flex;align-items:center;gap:12px;background:rgba(253,247,231,.85);border-radius:20px;padding:5px 14px;font-family:'Quicksand',sans-serif;font-weight:700;font-size:11px;color:#33304A;white-space:nowrap">${parts.join('')}</div>`;
+}
+
 function renderNow() {
   const day = cache.trip.days[currentDayIndex];
   const dayNum = String(currentDayIndex + 1);
@@ -278,11 +357,7 @@ ${hibiscusDeco('hibiscus-r', 'position:absolute;right:20px;top:182px;width:34px;
 <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:14px;letter-spacing:.03em;text-transform:uppercase;color:#2E2B44;white-space:nowrap">DAY ${dayNum}/5 · ${esc(day.date)}</div>
 <div style="width:18px;height:0;border-top:1.5px dashed rgba(51,48,74,.2)"></div>
 </div>
-<div style="display:flex;align-items:center;gap:12px;background:rgba(253,247,231,.85);border-radius:20px;padding:5px 14px;font-family:'Quicksand',sans-serif;font-weight:700;font-size:11px;color:#33304A;white-space:nowrap">
-<span style="display:flex;align-items:center;gap:4px"><i class="ph-duotone ph-thermometer-simple" style="font-size:13px;color:#E0655F"></i>87°</span>
-<span style="display:flex;align-items:center;gap:4px"><i class="ph-duotone ph-sun" style="font-size:13px;color:#E0655F"></i>UV 11</span>
-<span style="display:flex;align-items:center;gap:4px"><i class="ph-duotone ph-sun-horizon" style="font-size:13px;color:#E0655F"></i>6:10 pm</span>
-</div>
+${weatherPillHtml(currentDayIndex)}
 </div>
 
 <div style="padding:0 24px;position:relative;z-index:1">
@@ -811,6 +886,7 @@ function startEditPost(postId) {
   const post = row.posts.find(p => p.id == postId);
   state.editDrafts[postId] = { text: post.text };
   state.postEditing[postId] = true;
+  delete state.swipeOpen[postId];
   render();
 }
 function cancelEditPost(postId) {
@@ -866,6 +942,52 @@ function findPrepItem(id) {
 }
 
 // ---------- event wiring ----------
+// ---------- swipe a post left to reveal Delete ----------
+let swipe = null, lastSwipeEnd = 0;
+function closeOpenSwipes(exceptId) {
+  Object.keys(state.swipeOpen).forEach(id => {
+    if (id === String(exceptId)) return;
+    delete state.swipeOpen[id];
+    const c = root.querySelector(`[data-swipe-card="${id}"]`);
+    if (c) { c.style.transition = 'transform .2s ease'; c.style.transform = 'translateX(0px)'; }
+  });
+}
+root.addEventListener('pointerdown', (e) => {
+  const card = e.target.closest('[data-swipe-card]');
+  const onDelete = e.target.closest('[data-action^="post-remove"], [data-action^="post-edit-start"]');
+  if (!card) { if (!onDelete) closeOpenSwipes(); return; }
+  closeOpenSwipes(card.dataset.swipeCard);
+  swipe = { card, id: card.dataset.swipeCard, x0: e.clientX, y0: e.clientY, base: state.swipeOpen[card.dataset.swipeCard] ? -SWIPE_W : 0, x: null, active: false, pid: e.pointerId };
+});
+root.addEventListener('pointermove', (e) => {
+  if (!swipe || e.pointerId !== swipe.pid) return;
+  const dx = e.clientX - swipe.x0, dy = e.clientY - swipe.y0;
+  if (!swipe.active) {
+    if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { swipe = null; return; } // vertical scroll
+    if (Math.abs(dx) < 8) return;
+    swipe.active = true;
+    swipe.card.style.transition = 'none';
+    try { swipe.card.setPointerCapture(e.pointerId); } catch (err) {}
+  }
+  swipe.x = Math.max(-SWIPE_W - 16, Math.min(0, swipe.base + dx));
+  swipe.card.style.transform = `translateX(${swipe.x}px)`;
+});
+function endSwipe(e) {
+  if (!swipe || e.pointerId !== swipe.pid) return;
+  if (swipe.active) {
+    const open = swipe.x < -SWIPE_W / 2;
+    if (open) state.swipeOpen[swipe.id] = true; else delete state.swipeOpen[swipe.id];
+    swipe.card.style.transition = 'transform .2s ease';
+    swipe.card.style.transform = `translateX(${open ? -SWIPE_W : 0}px)`;
+    lastSwipeEnd = Date.now();
+  }
+  swipe = null;
+}
+root.addEventListener('pointerup', endSwipe);
+root.addEventListener('pointercancel', endSwipe);
+// a drag that ends over Edit etc. must not also count as a tap
+root.addEventListener('click', (e) => { if (Date.now() - lastSwipeEnd < 350 && e.target.closest('[data-swipe-card]')) { e.stopPropagation(); e.preventDefault(); } }, true);
+
 root.addEventListener('click', (e) => {
   const el = e.target.closest('[data-action]');
   if (!el) return;
@@ -944,6 +1066,9 @@ root.addEventListener('change', (e) => {
 let refreshing = false;
 async function refreshLiveData() {
   if (refreshing || !cache.trip) return;
+  // the day may have rolled over (in Hawaii time) while the app stayed open
+  const newIdx = computeCurrentDayIndex();
+  if (newIdx !== currentDayIndex) { currentDayIndex = newIdx; await ensureSchedule(currentDayIndex).catch(() => {}); render(); }
   // don't clobber an in-progress, uncommitted edit (e.g. mid-keystroke in a schedule field)
   const active = document.activeElement;
   if (active && root.contains(active) && /^(INPUT|TEXTAREA)$/.test(active.tagName)) return;
@@ -967,6 +1092,8 @@ async function refreshLiveData() {
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshLiveData(); });
 window.addEventListener('focus', refreshLiveData);
 setInterval(refreshLiveData, 25000);
+setInterval(refreshWeather, 15 * 60 * 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshWeather(); });
 
 // ---------- Instagram post export (scrapbook-style, 1080x1350) ----------
 function loadImage(src) {
@@ -1179,6 +1306,7 @@ async function boot() {
   cache.prep = prep;
   await ensureSchedule(currentDayIndex);
   render();
+  refreshWeather();
 }
 boot().catch(err => { root.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#33304A">Could not load the trip. ' + esc(err.message) + '</div>'; console.error(err); });
 
