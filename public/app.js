@@ -622,17 +622,19 @@ function renderDetail() {
 
 <div style="padding:14px 42px 0">
 ${scheduleSectionHtml(dayKey, 'detail')}
+<div style="display:flex;flex-direction:column;align-items:flex-end;margin-top:12px">
+<div data-action="export-day|${dayKey}" style="cursor:pointer;background:transparent;border:1.5px dashed rgba(51,48,74,.28);border-radius:8px;padding:8px 14px;display:inline-flex;align-items:center;gap:9px">
+<i class="ph-duotone ph-image-square" style="font-size:17px;color:#E0655F"></i>
+<div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;color:#33304A">Save Instagram post</div>
+<i class="ph-bold ph-download-simple" style="font-size:14px;color:rgba(51,48,74,.5)"></i>
+</div>
+<div id="export-status-${dayKey}" style="font-size:11.5px;color:rgba(51,48,74,.5);text-align:right;margin-top:6px"></div>
+</div>
 </div>
 
 <div style="padding:16px 24px 0;display:flex;flex-direction:column;gap:11px">${notes}</div>
 
 <div style="padding:18px 24px 4px">
-<div data-action="export-day|${dayKey}" style="cursor:pointer;background:#FDF7E7;border:1.5px dashed rgba(51,48,74,.28);border-radius:8px;padding:11px 20px;display:flex;align-items:center;gap:11px">
-<i class="ph-duotone ph-image-square" style="font-size:20px;color:#E0655F"></i>
-<div style="flex:1;font-family:'Quicksand',sans-serif;font-weight:700;font-size:14.5px;color:#33304A">Save Instagram post</div>
-<i class="ph-bold ph-download-simple" style="font-size:16px;color:rgba(51,48,74,.5)"></i>
-</div>
-<div id="export-status-${dayKey}" style="font-size:11.5px;color:rgba(51,48,74,.5);text-align:center;margin-top:6px"></div>
 ${dayPagerHtml(dayKey)}
 </div>
 </div>`;
@@ -650,7 +652,7 @@ function dayPagerHtml(dayKey) {
 <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;opacity:.75">${prev ? 'Previous day' : 'Next day'}</div>
 <div style="font-size:13.5px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(d.dow)} · ${esc(d.title)}</div>
 </div>`;
-    return `<div data-action="day-open|${idx}" style="flex:1;min-width:0;cursor:pointer;background:${prev ? '#FDF7E7' : '#2E7D75'};color:${prev ? '#33304A' : '#FDF7E7'};border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;font-family:'Quicksand',sans-serif;font-weight:700">${prev ? arrow + label : label + arrow}</div>`;
+    return `<div data-action="day-open|${idx}" style="flex:1;min-width:0;cursor:pointer;background:${prev ? '#FDF7E7' : '#2E7D75'};color:${prev ? '#33304A' : '#FDF7E7'};border-radius:8px;padding:12px 14px;display:flex;align-items:center;justify-content:${prev ? 'flex-start' : 'flex-end'};gap:10px;font-family:'Quicksand',sans-serif;font-weight:700">${prev ? arrow + label : label + arrow}</div>`;
   };
   return `<div style="display:flex;gap:10px;margin-top:6px">${btn(dayKey - 1, 'prev')}${btn(dayKey + 1, 'next')}</div>`;
 }
