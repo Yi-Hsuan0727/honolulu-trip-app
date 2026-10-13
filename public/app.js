@@ -1281,7 +1281,18 @@ async function exportDayAsInstagramPost(dayKey) {
     ctx.font = "600 34px 'Quicksand', sans-serif";
     ctx.fillText(day.local, W / 2, 258);
 
-    let photoSources = posts.slice(0, 4).map(p => ({ src: p.imagePath, caption: p.text }));
+    // The collage fits 4 polaroids; with more photos, pick a random 4 each time
+    // (kept in schedule order) so tapping again gives a different set.
+    let chosen = posts;
+    if (posts.length > 4) {
+      const idx = posts.map((_, i) => i);
+      for (let i = idx.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [idx[i], idx[j]] = [idx[j], idx[i]];
+      }
+      chosen = idx.slice(0, 4).sort((a, b) => a - b).map(i => posts[i]);
+    }
+    let photoSources = chosen.map(p => ({ src: p.imagePath, caption: p.text }));
     if (photoSources.length === 0) photoSources = [{ src: day.photo.src, caption: day.sub }];
 
     const loaded = await Promise.all(photoSources.map(async (p) => {
@@ -1311,7 +1322,9 @@ async function exportDayAsInstagramPost(dayKey) {
       link.click();
       link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 4000);
-      setStatus('Saved — check your downloads.');
+      setStatus(posts.length > 4
+        ? `Saved — random 4 of ${posts.length} photos. Tap again for a different mix.`
+        : 'Saved — check your downloads.');
     }, 'image/png');
   } catch (err) {
     console.error(err);
