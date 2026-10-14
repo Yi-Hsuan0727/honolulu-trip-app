@@ -825,7 +825,25 @@ function renderNav() {
 }
 
 // ---------- root render ----------
+// Every render waits for its photos: if any <img> on the new page hasn't loaded yet, the
+// loading screen comes back until they all have (or settleMs passes), so pages never show blank photos.
+let settleToken = 0;
 function render() {
+  renderView();
+  const token = ++settleToken;
+  const pending = Array.from(root.querySelectorAll('img')).filter(img => !img.complete);
+  if (!pending.length) { hideLoader(); return Promise.resolve(); }
+  showLoader();
+  const loads = pending.map(img => new Promise(res => {
+    img.addEventListener('load', res, { once: true });
+    img.addEventListener('error', res, { once: true });
+  }));
+  return Promise.race([Promise.all(loads), new Promise(res => setTimeout(res, 30000))]).then(() => {
+    if (token === settleToken) hideLoader();
+  });
+}
+
+function renderView() {
   let tabContent;
   if (state.tab === 'now') tabContent = renderNow();
   else if (state.tab === 'days') tabContent = renderDays();
@@ -1374,28 +1392,18 @@ async function boot() {
   cache.trip = trip;
   cache.prep = prep;
   await ensureSchedule(currentDayIndex);
-  render();
   refreshWeather();
-  await waitForVisibleImages(5000);
-  hideLoader();
+  await render();
+}
+
+function showLoader() {
+  const el = document.getElementById('loader');
+  if (el) el.classList.remove('done');
 }
 
 function hideLoader() {
   const el = document.getElementById('loader');
-  if (!el) return;
-  el.classList.add('done');
-  setTimeout(() => el.remove(), 600);
-}
-
-// Resolve once the photos near the top of the page have loaded (or failed), or after timeoutMs.
-function waitForVisibleImages(timeoutMs) {
-  const imgs = Array.from(root.querySelectorAll('img')).filter(img => !img.complete && img.getBoundingClientRect().top < window.innerHeight * 1.5);
-  if (!imgs.length) return Promise.resolve();
-  const loads = imgs.map(img => new Promise(res => {
-    img.addEventListener('load', res, { once: true });
-    img.addEventListener('error', res, { once: true });
-  }));
-  return Promise.race([Promise.all(loads), new Promise(res => setTimeout(res, timeoutMs))]);
+  if (el) el.classList.add('done');
 }
 
 // A photo that fails to load (flaky connection) gets one retry instead of staying blank.
