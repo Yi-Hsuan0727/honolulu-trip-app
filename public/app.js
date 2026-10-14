@@ -882,11 +882,27 @@ function toggleNote(rowId, dayKey) {
   state.noteOpen[rowId] = !state.noteOpen[rowId];
   render();
 }
+// Shrink a photo in the browser before upload (max 1600px, JPEG) so it stores small and loads fast.
+async function shrinkImage(file, maxSide = 1600, quality = 0.82) {
+  if (!file || !/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+  try {
+    const url = URL.createObjectURL(file);
+    const img = await loadImage(url);
+    URL.revokeObjectURL(url);
+    const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+    if (scale === 1 && file.size < 400 * 1024) return file;
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    const blob = await new Promise(res => c.toBlob(res, 'image/jpeg', quality));
+    return blob && blob.size < file.size ? new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }) : file;
+  } catch (e) { return file; }
+}
 async function addPost(rowId, dayKey) {
   const draft = state.drafts[rowId] || {};
   const fd = new FormData();
   fd.append('text', draft.text || '');
-  if (draft.file) fd.append('image', draft.file);
+  if (draft.file) fd.append('image', await shrinkImage(draft.file));
   const post = await api('/schedule-items/' + rowId + '/posts', { method: 'POST', body: fd });
   const row = cache.schedules[dayKey].find(r => r.id == rowId);
   row.posts = row.posts || [];
@@ -918,7 +934,7 @@ async function saveEditPost(postId, rowId, dayKey) {
   const draft = state.editDrafts[postId] || {};
   const fd = new FormData();
   fd.append('text', draft.text || '');
-  if (draft.file) fd.append('image', draft.file);
+  if (draft.file) fd.append('image', await shrinkImage(draft.file));
   const updated = await api('/posts/' + postId, { method: 'PUT', body: fd });
   const row = cache.schedules[dayKey].find(r => r.id == rowId);
   const post = row.posts.find(p => p.id == postId);
@@ -1360,8 +1376,38 @@ async function boot() {
   await ensureSchedule(currentDayIndex);
   render();
   refreshWeather();
+  await waitForVisibleImages(5000);
+  hideLoader();
 }
-boot().catch(err => { root.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#33304A">Could not load the trip. ' + esc(err.message) + '</div>'; console.error(err); });
+
+function hideLoader() {
+  const el = document.getElementById('loader');
+  if (!el) return;
+  el.classList.add('done');
+  setTimeout(() => el.remove(), 600);
+}
+
+// Resolve once the photos near the top of the page have loaded (or failed), or after timeoutMs.
+function waitForVisibleImages(timeoutMs) {
+  const imgs = Array.from(root.querySelectorAll('img')).filter(img => !img.complete && img.getBoundingClientRect().top < window.innerHeight * 1.5);
+  if (!imgs.length) return Promise.resolve();
+  const loads = imgs.map(img => new Promise(res => {
+    img.addEventListener('load', res, { once: true });
+    img.addEventListener('error', res, { once: true });
+  }));
+  return Promise.race([Promise.all(loads), new Promise(res => setTimeout(res, timeoutMs))]);
+}
+
+// A photo that fails to load (flaky connection) gets one retry instead of staying blank.
+root.addEventListener('error', (e) => {
+  const img = e.target;
+  if (!img || img.tagName !== 'IMG' || img.dataset.retried) return;
+  img.dataset.retried = '1';
+  const src = img.getAttribute('src');
+  setTimeout(() => { img.src = src + (src.includes('?') ? '&' : '?') + 'r=' + Date.now(); }, 800);
+}, true);
+
+boot().catch(err => { hideLoader(); root.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#33304A">Could not load the trip. ' + esc(err.message) + '</div>'; console.error(err); });
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
