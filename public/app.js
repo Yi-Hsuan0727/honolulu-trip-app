@@ -1222,15 +1222,16 @@ const POLAROID_LAYOUTS = {
     { cx: 745, cy: 790, w: 480, h: 600, rotateDeg: 5 }
   ],
   3: [
-    { cx: 300, cy: 630, w: 460, h: 560, rotateDeg: -7 },
-    { cx: 765, cy: 600, w: 440, h: 540, rotateDeg: 6 },
-    { cx: 530, cy: 990, w: 460, h: 560, rotateDeg: -3 }
+    // rows are spaced so the lower polaroids don't cover the upper captions
+    { cx: 290, cy: 555, w: 390, h: 470, rotateDeg: -6 },
+    { cx: 790, cy: 545, w: 380, h: 460, rotateDeg: 5 },
+    { cx: 540, cy: 1040, w: 390, h: 470, rotateDeg: -3 }
   ],
   4: [
-    { cx: 300, cy: 580, w: 420, h: 520, rotateDeg: -7 },
-    { cx: 765, cy: 555, w: 400, h: 500, rotateDeg: 6 },
-    { cx: 300, cy: 1000, w: 420, h: 520, rotateDeg: 4 },
-    { cx: 765, cy: 1020, w: 400, h: 500, rotateDeg: -5 }
+    { cx: 290, cy: 545, w: 380, h: 460, rotateDeg: -6 },
+    { cx: 790, cy: 540, w: 370, h: 450, rotateDeg: 5 },
+    { cx: 290, cy: 1045, w: 380, h: 460, rotateDeg: 4 },
+    { cx: 790, cy: 1050, w: 370, h: 450, rotateDeg: -4 }
   ]
 };
 
