@@ -51,8 +51,11 @@ input,textarea{font-family:inherit}
 .day-photo-strip img{width:100%;height:100%;object-fit:cover;display:block}
 
 /* Loading screen shown until the first page and its visible photos are ready */
-#loader{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:linear-gradient(180deg,#DCEBE7,#F3ECD8);transition:opacity .45s ease,visibility .45s}
-#loader.done{opacity:0;visibility:hidden;pointer-events:none}
+#loader{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:linear-gradient(180deg,#DCEBE7,#F3ECD8);transition:opacity .45s ease,visibility .45s;
+  /* stays invisible for the first 0.8s so quick loads never flash the loading screen */
+  animation:loader-in .35s ease .8s both}
+#loader.done{opacity:0;visibility:hidden;pointer-events:none;animation:none}
+@keyframes loader-in{from{opacity:0}to{opacity:1}}
 .loader-sun{width:56px;height:56px;border-radius:50%;background:#F6C453;box-shadow:0 0 0 10px rgba(246,196,83,.28);animation:loader-pulse 1.6s ease-in-out infinite}
 .loader-title{font-family:'Quicksand',sans-serif;font-weight:700;font-size:20px;letter-spacing:.04em;color:#33304A}
 .loader-dots{display:flex;gap:9px}
