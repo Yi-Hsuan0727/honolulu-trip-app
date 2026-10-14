@@ -54,6 +54,7 @@ async function init() {
       image_mime TEXT
     )
   `);
+  try { await client.execute('ALTER TABLE posts ADD COLUMN thumb_data BLOB'); } catch (e) { /* column already exists */ }
   await client.execute(`
     CREATE TABLE IF NOT EXISTS prep_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

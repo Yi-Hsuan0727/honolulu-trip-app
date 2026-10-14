@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const db = require('../db');
+const { prepareUpload, makeThumb } = require('../images');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -84,11 +85,12 @@ router.post('/schedule-items/:id/posts', upload.single('image'), async (req, res
     if (count >= 3) return res.status(400).json({ error: 'a schedule item can only have 3 posts' });
     const maxPos = Number((await db.execute('SELECT COALESCE(MAX(position), -1) AS m FROM posts WHERE schedule_item_id = ?', [id])).rows[0].m);
     const text = req.body.text || '';
-    const imageData = req.file ? req.file.buffer : null;
-    const imageMime = req.file ? req.file.mimetype : null;
+    const img = req.file ? await prepareUpload(req.file.buffer, req.file.mimetype) : null;
+    const imageData = img ? img.full : null;
+    const imageMime = img ? img.mime : null;
     const info = await db.execute(
-      'INSERT INTO posts (schedule_item_id, position, text, image_data, image_mime) VALUES (?, ?, ?, ?, ?)',
-      [id, maxPos + 1, text, imageData, imageMime]
+      'INSERT INTO posts (schedule_item_id, position, text, image_data, image_mime, thumb_data) VALUES (?, ?, ?, ?, ?, ?)',
+      [id, maxPos + 1, text, imageData, imageMime, img ? img.thumb : null]
     );
     const postId = Number(info.lastInsertRowid);
     res.status(201).json({ id: postId, text, imagePath: imageMime ? `/api/posts/${postId}/image` : null });
@@ -101,9 +103,11 @@ router.put('/posts/:id', upload.single('image'), async (req, res, next) => {
     const existing = (await db.execute('SELECT * FROM posts WHERE id = ?', [id])).rows[0];
     if (!existing) return res.status(404).json({ error: 'not found' });
     const text = req.body.text !== undefined ? req.body.text : existing.text;
-    const imageData = req.file ? req.file.buffer : existing.image_data;
-    const imageMime = req.file ? req.file.mimetype : existing.image_mime;
-    await db.execute('UPDATE posts SET text = ?, image_data = ?, image_mime = ? WHERE id = ?', [text, imageData, imageMime, id]);
+    const img = req.file ? await prepareUpload(req.file.buffer, req.file.mimetype) : null;
+    const imageData = img ? img.full : existing.image_data;
+    const imageMime = img ? img.mime : existing.image_mime;
+    const thumbData = img ? img.thumb : existing.thumb_data;
+    await db.execute('UPDATE posts SET text = ?, image_data = ?, image_mime = ?, thumb_data = ? WHERE id = ?', [text, imageData, imageMime, thumbData, id]);
     res.json({ id, text, imagePath: imageMime ? `/api/posts/${id}/image` : null });
   } catch (err) { next(err); }
 });
@@ -115,14 +119,29 @@ router.delete('/posts/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ?thumb=1 serves the small version (created and saved on first request for older photos).
 router.get('/posts/:id/image', async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const post = (await db.execute('SELECT image_data, image_mime FROM posts WHERE id = ?', [id])).rows[0];
+    const wantThumb = req.query.thumb !== undefined;
+    const post = (await db.execute(
+      wantThumb ? 'SELECT image_data, image_mime, thumb_data FROM posts WHERE id = ?' : 'SELECT image_data, image_mime FROM posts WHERE id = ?', [id]
+    )).rows[0];
     if (!post || !post.image_data) return res.status(404).end();
-    res.set('Content-Type', post.image_mime || 'application/octet-stream');
+    let body = Buffer.from(post.image_data), mime = post.image_mime || 'application/octet-stream';
+    if (wantThumb) {
+      let thumb = post.thumb_data ? Buffer.from(post.thumb_data) : null;
+      if (!thumb) {
+        try {
+          thumb = await makeThumb(body);
+          await db.execute('UPDATE posts SET thumb_data = ? WHERE id = ?', [thumb, id]);
+        } catch (e) { console.error('thumbnail failed:', e.message); }
+      }
+      if (thumb) { body = thumb; mime = 'image/jpeg'; }
+    }
+    res.set('Content-Type', mime);
     res.set('Cache-Control', 'private, max-age=31536000, immutable');
-    res.send(Buffer.from(post.image_data));
+    res.send(body);
   } catch (err) { next(err); }
 });
 

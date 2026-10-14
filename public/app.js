@@ -237,13 +237,16 @@ ${photoSlotHtml({ mode: 'draft', rowId: row.id, previewUrl: draft.previewUrl, ra
   return html;
 }
 
+// Lists show a small server-made thumbnail; the full photo is only used for the Instagram export.
+const thumbUrl = (src) => (src && src.startsWith('/api/posts/') ? src + '?thumb=1' : src);
+
 function photoSlotHtml({ mode, rowId, postId, previewUrl, existingUrl, radius }) {
   const inputAttrs = mode === 'draft'
     ? `data-draft-file="${rowId}"`
     : `data-edit-file="${postId}"`;
   const src = previewUrl || existingUrl;
   const inner = src
-    ? `<img src="${esc(src)}" alt="">`
+    ? `<img src="${esc(thumbUrl(src))}" alt="" decoding="async">`
     : `<div class="empty"><i class="ph-duotone ph-camera"></i></div>`;
   return `<div class="post-photo" style="flex:0 0 33.3333%;min-height:80px;border-radius:${radius}px">
 ${inner}
@@ -263,7 +266,7 @@ function postCardHtml(dayKey, rowId, post, pad) {
 <div data-action="post-edit-start|${post.id}" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:72px;color:#FDF7E7;font-family:'Quicksand',sans-serif;font-weight:700;font-size:11px;background:#2E7D75"><i class="ph-bold ph-pencil-simple" style="font-size:17px"></i>Edit</div>
 </div>
 <div data-swipe-card="${post.id}" style="position:relative;touch-action:pan-y;user-select:none;-webkit-user-select:none;background:#FFFFFF;border-radius:8px;border:1px solid rgba(51,48,74,.08);box-sizing:border-box;padding:${pad}px;display:flex;align-items:stretch;gap:${pad}px;transform:translateX(${open ? -SWIPE_W : 0}px);transition:transform .2s ease">
-<div style="flex:0 0 33.3333%;display:flex;min-height:80px;border-radius:6px;overflow:hidden">${post.imagePath ? `<img src="${esc(post.imagePath)}" alt="" draggable="false" style="width:100%;height:100%;object-fit:cover">` : `<div class="post-photo empty" style="width:100%"><i class="ph-duotone ph-camera" style="opacity:.6"></i></div>`}</div>
+<div style="flex:0 0 33.3333%;display:flex;min-height:80px;border-radius:6px;overflow:hidden">${post.imagePath ? `<img src="${esc(thumbUrl(post.imagePath))}" alt="" decoding="async" draggable="false" style="width:100%;height:100%;object-fit:cover">` : `<div class="post-photo empty" style="width:100%"><i class="ph-duotone ph-camera" style="opacity:.6"></i></div>`}</div>
 <div style="flex:1 1 66.6667%;display:flex;flex-direction:column;justify-content:space-between;min-width:0">
 <div style="font-size:12px;line-height:1.4;color:rgba(51,48,74,.72);word-break:break-word;overflow-wrap:anywhere">${esc(post.text)}</div>
 
