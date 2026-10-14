@@ -868,19 +868,58 @@ async function ensureSchedule(dayKey) {
   cache.schedules[dayKey] = await api('/schedule/' + dayKey);
 }
 
+// ---------- saving feedback ----------
+// Floating pill above the nav bar: spinner while saving, then a check (or an error).
+let toastTimer = null;
+function showToast(kind, text, autoHideMs) {
+  let el = document.getElementById('toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.setAttribute('role', 'status');
+    document.body.appendChild(el);
+  }
+  clearTimeout(toastTimer);
+  const icon = kind === 'saving' ? '<span class="toast-spin"></span>' : kind === 'ok' ? '<i class="ph-bold ph-check-circle"></i>' : '<i class="ph-bold ph-warning-circle"></i>';
+  el.className = 'toast-' + kind + ' show';
+  el.innerHTML = icon + '<span>' + esc(text) + '</span>';
+  if (autoHideMs) toastTimer = setTimeout(() => el.classList.remove('show'), autoHideMs);
+}
+const inFlight = new Set();
+// Runs fn() with a "Saving…" toast. Ignores a repeat tap on the same action while it is still running.
+async function saving(key, label, fn) {
+  if (inFlight.has(key)) return;
+  inFlight.add(key);
+  showToast('saving', label);
+  try {
+    const result = await fn();
+    showToast('ok', 'Saved', 1600);
+    return result;
+  } catch (err) {
+    console.error(err);
+    showToast('error', 'Couldn’t save — please try again', 4500);
+  } finally {
+    inFlight.delete(key);
+  }
+}
+
 async function toggleEditSchedule(dayKey) {
   state.editingSchedule[dayKey] = !state.editingSchedule[dayKey];
   render();
 }
 async function addScheduleItem(dayKey) {
+  return saving('add-item-' + dayKey, 'Adding…', async () => {
   const item = await api('/schedule/' + dayKey, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ time: '', what: 'New item', where: '' }) });
   cache.schedules[dayKey].push(item);
-  render();
+  renderView();
+  });
 }
 async function removeScheduleRow(rowId, dayKey) {
+  return saving('rm-item-' + rowId, 'Removing…', async () => {
   await api('/schedule-items/' + rowId, { method: 'DELETE' });
   cache.schedules[dayKey] = cache.schedules[dayKey].filter(r => r.id != rowId);
-  render();
+  renderView();
+  });
 }
 async function moveScheduleRow(rowId, dayKey, dir) {
   const rows = cache.schedules[dayKey];
@@ -888,13 +927,13 @@ async function moveScheduleRow(rowId, dayKey, dir) {
   const newIdx = idx + dir;
   if (idx === -1 || newIdx < 0 || newIdx >= rows.length) return;
   const tmp = rows[idx]; rows[idx] = rows[newIdx]; rows[newIdx] = tmp;
-  render();
-  await api('/schedule/' + dayKey + '/reorder', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order: rows.map(r => r.id) }) });
+  renderView();
+  await saving('move-' + dayKey, 'Saving…', () => api('/schedule/' + dayKey + '/reorder', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order: rows.map(r => r.id) }) }));
 }
 async function commitRowField(rowId, dayKey, field, value) {
   const row = (cache.schedules[dayKey] || []).find(r => r.id == rowId);
   if (row) row[field] = value;
-  await api('/schedule-items/' + rowId, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: value }) });
+  await saving('field-' + rowId + field, 'Saving…', () => api('/schedule-items/' + rowId, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: value }) }));
 }
 function toggleNote(rowId, dayKey) {
   state.noteOpen[rowId] = !state.noteOpen[rowId];
@@ -917,23 +956,29 @@ async function shrinkImage(file, maxSide = 1600, quality = 0.82) {
   } catch (e) { return file; }
 }
 async function addPost(rowId, dayKey) {
-  const draft = state.drafts[rowId] || {};
-  const fd = new FormData();
-  fd.append('text', draft.text || '');
-  if (draft.file) fd.append('image', await shrinkImage(draft.file));
-  const post = await api('/schedule-items/' + rowId + '/posts', { method: 'POST', body: fd });
-  const row = cache.schedules[dayKey].find(r => r.id == rowId);
-  row.posts = row.posts || [];
-  row.posts.push(post);
-  delete state.drafts[rowId];
-  state.noteOpen[rowId] = false;
-  render();
+  return saving('add-post-' + rowId, 'Saving post…', async () => {
+    const draft = state.drafts[rowId] || {};
+    const fd = new FormData();
+    fd.append('text', draft.text || '');
+    if (draft.file) fd.append('image', await shrinkImage(draft.file));
+    const post = await api('/schedule-items/' + rowId + '/posts', { method: 'POST', body: fd });
+    // show the photo the user just picked right away instead of waiting to fetch it back from the server
+    if (draft.previewUrl && post.imagePath) post.imagePath = draft.previewUrl;
+    const row = cache.schedules[dayKey].find(r => r.id == rowId);
+    row.posts = row.posts || [];
+    row.posts.push(post);
+    delete state.drafts[rowId];
+    state.noteOpen[rowId] = false;
+    renderView();
+  });
 }
 async function removePost(postId, rowId, dayKey) {
-  await api('/posts/' + postId, { method: 'DELETE' });
-  const row = cache.schedules[dayKey].find(r => r.id == rowId);
-  row.posts = row.posts.filter(p => p.id != postId);
-  render();
+  return saving('rm-post-' + postId, 'Deleting…', async () => {
+    await api('/posts/' + postId, { method: 'DELETE' });
+    const row = cache.schedules[dayKey].find(r => r.id == rowId);
+    row.posts = row.posts.filter(p => p.id != postId);
+    renderView();
+  });
 }
 function startEditPost(postId) {
   const row = findRowByPost(postId);
@@ -949,17 +994,21 @@ function cancelEditPost(postId) {
   render();
 }
 async function saveEditPost(postId, rowId, dayKey) {
-  const draft = state.editDrafts[postId] || {};
-  const fd = new FormData();
-  fd.append('text', draft.text || '');
-  if (draft.file) fd.append('image', await shrinkImage(draft.file));
-  const updated = await api('/posts/' + postId, { method: 'PUT', body: fd });
-  const row = cache.schedules[dayKey].find(r => r.id == rowId);
-  const post = row.posts.find(p => p.id == postId);
-  post.text = updated.text; post.imagePath = updated.imagePath;
-  state.postEditing[postId] = false;
-  delete state.editDrafts[postId];
-  render();
+  return saving('edit-post-' + postId, 'Saving post…', async () => {
+    const draft = state.editDrafts[postId] || {};
+    const fd = new FormData();
+    fd.append('text', draft.text || '');
+    if (draft.file) fd.append('image', await shrinkImage(draft.file));
+    const updated = await api('/posts/' + postId, { method: 'PUT', body: fd });
+    const row = cache.schedules[dayKey].find(r => r.id == rowId);
+    const post = row.posts.find(p => p.id == postId);
+    post.text = updated.text;
+    // a replaced photo keeps the same URL (cached "immutable"), so show the new local one instead
+    post.imagePath = draft.file && draft.previewUrl ? draft.previewUrl : updated.imagePath;
+    state.postEditing[postId] = false;
+    delete state.editDrafts[postId];
+    renderView();
+  });
 }
 function findRowByPost(postId) {
   for (const dayKey in cache.schedules) {
@@ -1405,6 +1454,30 @@ function hideLoader() {
   const el = document.getElementById('loader');
   if (el) el.classList.add('done');
 }
+
+// Dragging or wheel-scrolling on the fixed nav bar scrolls the page behind it (the open detail
+// overlay if there is one, otherwise the window) instead of showing a scrollbar on the nav itself.
+(function forwardNavScroll() {
+  let lastY = null;
+  const scrollPage = (dy) => {
+    const overlay = root.querySelector('.overlay.scr');
+    if (overlay) overlay.scrollTop += dy; else window.scrollBy(0, dy);
+  };
+  document.addEventListener('touchstart', (e) => {
+    lastY = e.target.closest && e.target.closest('.nav-bar') ? e.touches[0].clientY : null;
+  }, { passive: true });
+  document.addEventListener('touchmove', (e) => {
+    if (lastY == null) return;
+    const y = e.touches[0].clientY;
+    scrollPage(lastY - y);
+    lastY = y;
+    e.preventDefault();
+  }, { passive: false });
+  document.addEventListener('touchend', () => { lastY = null; }, { passive: true });
+  document.addEventListener('wheel', (e) => {
+    if (e.target.closest && e.target.closest('.nav-bar')) { scrollPage(e.deltaY); e.preventDefault(); }
+  }, { passive: false });
+})();
 
 // A photo that fails to load (flaky connection) gets one retry instead of staying blank.
 root.addEventListener('error', (e) => {

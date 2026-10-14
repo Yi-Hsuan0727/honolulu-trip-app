@@ -62,3 +62,16 @@ input,textarea{font-family:inherit}
 @keyframes loader-pulse{0%,100%{transform:scale(.92)}50%{transform:scale(1.08)}}
 @keyframes loader-bounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-10px);opacity:1}}
 .loader-sub{font-family:'Quicksand',sans-serif;font-weight:600;font-size:13px;color:rgba(51,48,74,.6);margin-top:-8px}
+
+/* The fixed nav bar is never its own scroll area; app.js forwards drags/wheel on it to the page behind */
+.nav-bar{overflow:hidden;touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
+html,body{overflow-x:hidden}
+
+/* Saving toast */
+#toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translate(-50%,12px);z-index:60;display:flex;align-items:center;gap:9px;max-width:calc(100% - 32px);padding:10px 16px;border-radius:999px;background:#33304A;color:#FDF7E7;font-family:'Quicksand',sans-serif;font-weight:700;font-size:13.5px;box-shadow:0 8px 24px rgba(51,48,74,.3);opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.toast-ok i{color:#8FD5A6;font-size:17px}
+#toast.toast-error{background:#B8433D}
+#toast.toast-error i{font-size:17px}
+.toast-spin{width:15px;height:15px;border-radius:50%;border:2.5px solid rgba(253,247,231,.35);border-top-color:#F6C453;animation:toast-spin .7s linear infinite}
+@keyframes toast-spin{to{transform:rotate(360deg)}}
