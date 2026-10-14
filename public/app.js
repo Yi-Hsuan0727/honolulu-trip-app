@@ -1235,27 +1235,78 @@ const POLAROID_LAYOUTS = {
   ]
 };
 
+// Draws one 1080x1350 collage page (up to 4 polaroids) and resolves to a PNG blob.
+async function renderInstagramPage(day, photoSources, pageLabel) {
+  const W = 1080, H = 1350;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#DCEBE7');
+  grad.addColorStop(1, '#F3ECD8');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  drawStar(ctx, 90, 130, 26, SUN, -10);
+  drawStar(ctx, 985, 175, 18, CORAL, 14);
+  drawStar(ctx, 60, 1250, 20, TEAL, 8);
+  drawStar(ctx, 1005, 1270, 16, SUN, -18);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(51,48,74,.55)';
+  ctx.font = "700 30px 'Quicksand', sans-serif";
+  ctx.fillText(`DAY ${day.num}/5 · ${day.dow.toUpperCase()} ${day.date.toUpperCase()}`, W / 2, 110);
+
+  ctx.fillStyle = '#33304A';
+  ctx.font = "700 92px 'Quicksand', sans-serif";
+  ctx.fillText(day.title, W / 2, 210);
+
+  ctx.fillStyle = '#1D6B63';
+  ctx.font = "600 34px 'Quicksand', sans-serif";
+  ctx.fillText(day.local, W / 2, 258);
+
+  const loaded = await Promise.all(photoSources.map(async (p) => {
+    try { return { img: await loadImage(p.src), caption: p.caption }; }
+    catch (e) { return { img: null, caption: p.caption }; }
+  }));
+
+  const layout = POLAROID_LAYOUTS[Math.min(loaded.length, 4)] || POLAROID_LAYOUTS[1];
+  loaded.forEach((item, i) => {
+    const pos = layout[i];
+    if (!pos) return;
+    drawPolaroid(ctx, { cx: pos.cx, cy: pos.cy, w: pos.w, h: pos.h, rotateDeg: pos.rotateDeg, img: item.img, caption: item.caption });
+  });
+
+  ctx.fillStyle = 'rgba(51,48,74,.65)';
+  ctx.font = "700 26px 'Quicksand', sans-serif";
+  ctx.textAlign = 'center';
+  ctx.fillText('Mimi & Wellen · Oʻahu' + (pageLabel ? ' · ' + pageLabel : ''), W / 2, H - 46);
+
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
 async function exportDayAsInstagramPost(dayKey) {
   const statusEl = document.getElementById('export-status-' + dayKey);
   const setStatus = (msg) => { if (statusEl) statusEl.textContent = msg; };
-  setStatus('Preparing image…');
+  setStatus('Preparing images…');
   try {
     await ensureSchedule(dayKey);
     const day = cache.trip.days[dayKey];
     const rows = cache.schedules[dayKey] || [];
     const posts = [];
     rows.forEach(r => (r.posts || []).forEach(p => { if (p.imagePath) posts.push(p); }));
-
-    const W = 1080, H = 1350;
-    const canvas = document.createElement('canvas');
-    canvas.width = W; canvas.height = H;
-    const ctx = canvas.getContext('2d');
-
-    const grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, '#DCEBE7');
-    grad.addColorStop(1, '#F3ECD8');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, W, H);
 
     if (document.fonts && document.fonts.ready) await document.fonts.ready;
     // Caveat is only ever used inside <canvas>, never in visible DOM text, so the
@@ -1264,69 +1315,37 @@ async function exportDayAsInstagramPost(dayKey) {
       try { await Promise.all(['400', '600', '700'].map(w => document.fonts.load(`${w} 32px 'Caveat'`))); } catch (e) {}
     }
 
-    drawStar(ctx, 90, 130, 26, SUN, -10);
-    drawStar(ctx, 985, 175, 18, CORAL, 14);
-    drawStar(ctx, 60, 1250, 20, TEAL, 8);
-    drawStar(ctx, 1005, 1270, 16, SUN, -18);
-
-    ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(51,48,74,.55)';
-    ctx.font = "700 30px 'Quicksand', sans-serif";
-    ctx.fillText(`DAY ${day.num}/5 · ${day.dow.toUpperCase()} ${day.date.toUpperCase()}`, W / 2, 110);
-
-    ctx.fillStyle = '#33304A';
-    ctx.font = "700 92px 'Quicksand', sans-serif";
-    ctx.fillText(day.title, W / 2, 210);
-
-    ctx.fillStyle = '#1D6B63';
-    ctx.font = "600 34px 'Quicksand', sans-serif";
-    ctx.fillText(day.local, W / 2, 258);
-
-    // The collage fits 4 polaroids; with more photos, pick a random 4 each time
-    // (kept in schedule order) so tapping again gives a different set.
+    // Each collage holds 4 polaroids. With more than 4 photos we make two images:
+    // up to 8 random photos (kept in schedule order), split into two pages.
     let chosen = posts;
-    if (posts.length > 4) {
+    if (posts.length > 8) {
       const idx = posts.map((_, i) => i);
       for (let i = idx.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [idx[i], idx[j]] = [idx[j], idx[i]];
       }
-      chosen = idx.slice(0, 4).sort((a, b) => a - b).map(i => posts[i]);
+      chosen = idx.slice(0, 8).sort((a, b) => a - b).map(i => posts[i]);
     }
-    let photoSources = chosen.map(p => ({ src: p.imagePath, caption: p.text }));
-    if (photoSources.length === 0) photoSources = [{ src: day.photo.src, caption: day.sub }];
+    const toSource = p => ({ src: p.imagePath, caption: p.text });
+    let pages;
+    if (chosen.length === 0) pages = [[{ src: day.photo.src, caption: day.sub }]];
+    else if (chosen.length <= 4) pages = [chosen.map(toSource)];
+    else {
+      const half = Math.min(4, Math.ceil(chosen.length / 2));
+      pages = [chosen.slice(0, half).map(toSource), chosen.slice(half).map(toSource)];
+    }
 
-    const loaded = await Promise.all(photoSources.map(async (p) => {
-      try { return { img: await loadImage(p.src), caption: p.caption }; }
-      catch (e) { return { img: null, caption: p.caption }; }
-    }));
-
-    const layout = POLAROID_LAYOUTS[Math.min(loaded.length, 4)] || POLAROID_LAYOUTS[1];
-    loaded.forEach((item, i) => {
-      const pos = layout[i];
-      if (!pos) return;
-      drawPolaroid(ctx, { cx: pos.cx, cy: pos.cy, w: pos.w, h: pos.h, rotateDeg: pos.rotateDeg, img: item.img, caption: item.caption });
-    });
-
-    ctx.fillStyle = 'rgba(51,48,74,.65)';
-    ctx.font = "700 26px 'Quicksand', sans-serif";
-    ctx.textAlign = 'center';
-    ctx.fillText('Mimi & Wellen · Oʻahu', W / 2, H - 46);
-
-    canvas.toBlob((blob) => {
+    const slug = day.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    for (let i = 0; i < pages.length; i++) {
+      setStatus(`Creating image ${i + 1} of ${pages.length}…`);
+      const blob = await renderInstagramPage(day, pages[i], pages.length > 1 ? `${i + 1}/${pages.length}` : '');
       if (!blob) { setStatus('Could not create the image — try again.'); return; }
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'oahu-day-' + day.num + '-' + day.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.png';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 4000);
-      setStatus(posts.length > 4
-        ? `Saved — random 4 of ${posts.length} photos. Tap again for a different mix.`
-        : 'Saved — check your downloads.');
-    }, 'image/png');
+      downloadBlob(blob, `oahu-day-${day.num}-${slug}${pages.length > 1 ? '-' + (i + 1) : ''}.png`);
+      if (i < pages.length - 1) await new Promise(r => setTimeout(r, 600));
+    }
+    setStatus(pages.length > 1
+      ? `Saved ${pages.length} images (${chosen.length} of ${posts.length} photos) — check your downloads. Tap again for a different mix.`
+      : 'Saved — check your downloads.');
   } catch (err) {
     console.error(err);
     setStatus('Something went wrong creating the image.');
