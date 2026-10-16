@@ -1249,6 +1249,39 @@ function drawImageCover(ctx, img, x, y, w, h) {
 // ---- connected carousel: one long black strip, sliced into 1080x1350 slides ----
 const IG_W = 1080, IG_H = 1350, IG_GAP = 30, IG_LEFT = 150, IG_RIGHT = 30, IG_MAX_PHOTOS = 12;
 
+// ---- the web app's own flowers and shells, drawn as stickers on the strip ----
+let decorPromise = null;
+function loadDecor() {
+  if (!decorPromise) {
+    const toImg = (svg) => loadImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ')));
+    const shellSvgs = [];
+    Object.values(SEASHELLS).forEach(html => (html.match(/<svg[\s\S]*?<\/svg>/g) || []).forEach(svg => {
+      shellSvgs.push(svg.replace(/ style="[^"]*"/, '').replace(/width="\d+" height="\d+"/, 'width="200" height="200"'));
+    }));
+    const flowers = [[0, -15], [10, 20], [-14, -30]].map(([leaf, petal]) => hibiscus({ size: 240, leafRotate: leaf, petalRotate: petal, detailed: true }));
+    decorPromise = Promise.all([...flowers.map(toImg), ...shellSvgs.map(toImg)])
+      .then(imgs => ({ flowers: imgs.slice(0, flowers.length), shells: imgs.slice(flowers.length) }))
+      .catch(() => ({ flowers: [], shells: [] }));
+  }
+  return decorPromise;
+}
+
+function seededRandom(seed) {
+  let a = seed >>> 0;
+  return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+
+function drawSticker(ctx, img, cx, cy, size, rotateDeg) {
+  if (!img) return;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rotateDeg * Math.PI / 180);
+  ctx.shadowColor = 'rgba(0,0,0,.45)';
+  ctx.shadowBlur = 14; ctx.shadowOffsetY = 5;
+  ctx.drawImage(img, -size / 2, -size / 2, size, size);
+  ctx.restore();
+}
+
 // Decide how many columns / slides the strip needs and which columns hold one tall photo
 // vs. two stacked ones. Column widths are never a multiple of the slide width, so photos
 // naturally straddle the swipe seams and the slides read as one continuous picture.
@@ -1327,11 +1360,13 @@ async function renderInstagramStrip(day, photoSources) {
   const colW = areaW / plan.C;
   const y0 = IG_GAP, areaH = IG_H - IG_GAP * 2, halfH = (areaH - IG_GAP) / 2;
   const seams = Array.from({ length: plan.slides - 1 }, (_, i) => (i + 1) * IG_W);
+  const anchors = []; // gutter spots (upper part of tiles, clear of captions) where stickers can go
   let k = 0, tileNo = 0;
   plan.types.forEach((type, c) => {
     const x = x0 + c * (colW + IG_GAP);
     const cells = type === 'tall' ? [{ y: y0, h: areaH }] : [{ y: y0, h: halfH }, { y: y0 + halfH + IG_GAP, h: halfH }];
     cells.forEach((cell) => {
+      if (c < plan.C - 1) anchors.push({ x: x + colW + IG_GAP / 2, y: cell.y + cell.h * 0.18 });
       const item = loaded[k++];
       if (!item) return;
       const polaroid = tileNo % 3 === 2; // every third tile gets a tilted white frame
@@ -1339,6 +1374,27 @@ async function renderInstagramStrip(day, photoSources) {
       tileNo++;
     });
   });
+
+  // flowers and shells from the app, scattered over the gutters (same pick each time for a given day)
+  const decor = await loadDecor();
+  const rand = seededRandom(day.num * 7919 + photoSources.length);
+  // flowers: spread along the strip (every other gutter spot), shells: random spots down the gutters
+  const sorted = anchors.slice().sort((p, q) => p.x - q.x || p.y - q.y);
+  const flowerSpots = sorted.filter((_, i) => i % 2 === (rand() < 0.5 ? 0 : 1)).slice(0, plan.slides + 1);
+  flowerSpots.forEach((spot, i) => drawSticker(ctx, decor.flowers[i % decor.flowers.length], spot.x, spot.y, 150 + rand() * 50, (rand() - 0.5) * 50));
+  const gutterXs = [...new Set(anchors.map(q => q.x))];
+  const capZones = [[y0 + halfH - 130, y0 + halfH + 10], [IG_H - 150, IG_H]]; // keep shells off the caption rows
+  const placed = flowerSpots.slice();
+  for (let tries = 0, n = 0; tries < 200 && n < plan.slides * 5 && gutterXs.length; tries++) {
+    const sx = gutterXs[Math.floor(rand() * gutterXs.length)], sy = 60 + rand() * (IG_H - 120);
+    if (capZones.some(([lo, hi]) => sy > lo && sy < hi)) continue;
+    if (placed.some(q => Math.hypot(q.x - sx, q.y - sy) < 140)) continue;
+    placed.push({ x: sx, y: sy }); n++;
+    drawSticker(ctx, decor.shells[Math.floor(rand() * decor.shells.length)], sx, sy, 80 + rand() * 40, (rand() - 0.5) * 70);
+  }
+  // corner stickers in the title margin
+  drawSticker(ctx, decor.flowers[0], 78, 100, 120, -12);
+  drawSticker(ctx, decor.shells[0], 78, IG_H - 90, 90, 14);
 
   // vertical title in the left margin of the first slide, like a scrapbook spine
   ctx.save();
