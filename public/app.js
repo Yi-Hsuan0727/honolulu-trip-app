@@ -1127,6 +1127,7 @@ root.addEventListener('click', (e) => {
     case 'prep-add': addPrepItem(Number(a)); break;
     case 'refs-toggle': state.showRefs = !state.showRefs; render(); break;
     case 'export-day': exportDayAsInstagramPost(Number(a)); break;
+    case 'share-pending': sharePendingImages(Number(a)); break;
   }
 });
 
@@ -1438,6 +1439,42 @@ function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
+// Browsers can't write to the Photos library silently; the share sheet (Save Image / Save N Images)
+// is the way to add pictures there. Returns false when sharing files isn't supported (desktop),
+// so the caller falls back to normal downloads.
+let pendingShare = null;
+async function shareToPhotos(files, dayKey, setStatus) {
+  if (!(navigator.share && navigator.canShare && navigator.canShare({ files }))) return false;
+  try {
+    await navigator.share({ files });
+    setStatus('Shared. ' + (files.length > 1 ? 'Post the images in order as one carousel.' : ''));
+    return true;
+  } catch (err) {
+    if (err && err.name === 'AbortError') { setStatus('Cancelled — tap again whenever you’re ready.'); return true; }
+    if (err && err.name === 'NotAllowedError') {
+      // iOS only opens the share sheet right after a tap, and building the images took a moment: ask for one more tap.
+      pendingShare = { files };
+      const el = document.getElementById('export-status-' + dayKey);
+      if (el) el.innerHTML = `<span data-action="share-pending|${dayKey}" style="cursor:pointer;display:inline-block;margin-top:2px;padding:7px 14px;border-radius:999px;background:#1D6B63;color:#FDF7E7;font-family:'Quicksand',sans-serif;font-weight:700;font-size:12.5px">Images ready — tap to save to Photos</span>`;
+      return true;
+    }
+    console.error(err);
+    return false;
+  }
+}
+async function sharePendingImages(dayKey) {
+  const el = document.getElementById('export-status-' + dayKey);
+  if (!pendingShare) return;
+  const { files } = pendingShare;
+  try {
+    await navigator.share({ files });
+    pendingShare = null;
+    if (el) el.textContent = 'Shared.';
+  } catch (err) {
+    if (el && !(err && err.name === 'AbortError')) el.textContent = 'Couldn’t open the share sheet — try again.';
+  }
+}
+
 async function exportDayAsInstagramPost(dayKey) {
   const statusEl = document.getElementById('export-status-' + dayKey);
   const setStatus = (msg) => { if (statusEl) statusEl.textContent = msg; };
@@ -1474,8 +1511,11 @@ async function exportDayAsInstagramPost(dayKey) {
     const blobs = await renderInstagramStrip(day, sources);
     if (blobs.some(b => !b)) { setStatus('Could not create the image — try again.'); return; }
     const slug = day.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const names = blobs.map((_, i) => `oahu-day-${day.num}-${slug}${blobs.length > 1 ? '-' + (i + 1) : ''}.png`);
+    // On phones, open the share sheet so "Save Image" puts them straight into Photos instead of Files.
+    if (await shareToPhotos(blobs.map((b, i) => new File([b], names[i], { type: 'image/png' })), dayKey, setStatus)) return;
     for (let i = 0; i < blobs.length; i++) {
-      downloadBlob(blobs[i], `oahu-day-${day.num}-${slug}${blobs.length > 1 ? '-' + (i + 1) : ''}.png`);
+      downloadBlob(blobs[i], names[i]);
       if (i < blobs.length - 1) await new Promise(r => setTimeout(r, 600));
     }
     const extra = posts.length > IG_MAX_PHOTOS ? ` (random ${IG_MAX_PHOTOS} of ${posts.length} photos — tap again for a different mix)` : '';
