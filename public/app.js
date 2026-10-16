@@ -1378,14 +1378,14 @@ async function renderInstagramStrip(day, photoSources) {
   // flowers and shells from the app, scattered over the gutters (same pick each time for a given day)
   const decor = await loadDecor();
   const rand = seededRandom(day.num * 7919 + photoSources.length);
-  // flowers: spread along the strip (every other gutter spot), shells: random spots down the gutters
-  const sorted = anchors.slice().sort((p, q) => p.x - q.x || p.y - q.y);
-  const flowerSpots = sorted.filter((_, i) => i % 2 === (rand() < 0.5 ? 0 : 1)).slice(0, plan.slides + 1);
+  // one flower near the middle of the strip, a few shells at random spots down the gutters (kept sparse on purpose)
+  const middle = anchors.slice().sort((p, q) => Math.abs(p.x - W / 2) - Math.abs(q.x - W / 2));
+  const flowerSpots = middle.slice(0, 1);
   flowerSpots.forEach((spot, i) => drawSticker(ctx, decor.flowers[i % decor.flowers.length], spot.x, spot.y, 150 + rand() * 50, (rand() - 0.5) * 50));
   const gutterXs = [...new Set(anchors.map(q => q.x))];
   const capZones = [[y0 + halfH - 130, y0 + halfH + 10], [IG_H - 150, IG_H]]; // keep shells off the caption rows
   const placed = flowerSpots.slice();
-  for (let tries = 0, n = 0; tries < 200 && n < plan.slides * 5 && gutterXs.length; tries++) {
+  for (let tries = 0, n = 0; tries < 200 && n < plan.slides && gutterXs.length; tries++) {
     const sx = gutterXs[Math.floor(rand() * gutterXs.length)], sy = 60 + rand() * (IG_H - 120);
     if (capZones.some(([lo, hi]) => sy > lo && sy < hi)) continue;
     if (placed.some(q => Math.hypot(q.x - sx, q.y - sy) < 140)) continue;
