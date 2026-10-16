@@ -1246,7 +1246,7 @@ function drawImageCover(ctx, img, x, y, w, h) {
   ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
 }
 
-// ---- connected carousel: one long black strip, sliced into 1080x1350 slides ----
+// ---- connected carousel: one long themed strip, sliced into 1080x1350 slides ----
 const IG_W = 1080, IG_H = 1350, IG_GAP = 30, IG_LEFT = 150, IG_RIGHT = 30, IG_MAX_PHOTOS = 12;
 
 // ---- the web app's own flowers and shells, drawn as stickers on the strip ----
@@ -1276,7 +1276,7 @@ function drawSticker(ctx, img, cx, cy, size, rotateDeg) {
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(rotateDeg * Math.PI / 180);
-  ctx.shadowColor = 'rgba(0,0,0,.45)';
+  ctx.shadowColor = 'rgba(51,48,74,.3)';
   ctx.shadowBlur = 14; ctx.shadowOffsetY = 5;
   ctx.drawImage(img, -size / 2, -size / 2, size, size);
   ctx.restore();
@@ -1307,7 +1307,7 @@ function drawTile(ctx, { x, y, w, h, img, caption, polaroid, rotateDeg, seams })
     ctx.rotate((rotateDeg || 0) * Math.PI / 180);
     iw = w - 22; ih = h - 22;
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,.55)';
+    ctx.shadowColor = 'rgba(51,48,74,.4)';
     ctx.shadowBlur = 30; ctx.shadowOffsetY = 10;
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(-iw / 2 - 12, -ih / 2 - 12, iw + 24, ih + 24);
@@ -1318,7 +1318,7 @@ function drawTile(ctx, { x, y, w, h, img, caption, polaroid, rotateDeg, seams })
   ctx.rect(-iw / 2, -ih / 2, iw, ih);
   ctx.clip();
   if (img) drawImageCover(ctx, img, -iw / 2, -ih / 2, iw, ih);
-  else { ctx.fillStyle = '#2A2833'; ctx.fillRect(-iw / 2, -ih / 2, iw, ih); }
+  else { ctx.fillStyle = '#EDE7D6'; ctx.fillRect(-iw / 2, -ih / 2, iw, ih); }
   if (caption) {
     ctx.font = "600 40px 'Caveat', cursive";
     ctx.textAlign = 'center';
@@ -1348,7 +1348,12 @@ async function renderInstagramStrip(day, photoSources) {
   const strip = document.createElement('canvas');
   strip.width = W; strip.height = IG_H;
   const ctx = strip.getContext('2d');
-  ctx.fillStyle = '#0B0B0F';
+  // the app's sage-to-sand background, running across the whole strip so slides blend into each other
+  const bg = ctx.createLinearGradient(0, 0, W, 0);
+  bg.addColorStop(0, '#C6DEDA');
+  bg.addColorStop(0.5, '#DCEBE7');
+  bg.addColorStop(1, '#F3ECD8');
+  ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, IG_H);
 
   const loaded = await Promise.all(photoSources.map(async (p) => {
@@ -1400,16 +1405,16 @@ async function renderInstagramStrip(day, photoSources) {
   ctx.save();
   ctx.translate(78, IG_H / 2);
   ctx.rotate(-Math.PI / 2);
-  ctx.fillStyle = '#FFFFFF';
+  ctx.fillStyle = INK;
   ctx.textAlign = 'center';
   let title = day.title;
-  ctx.font = "700 64px 'Caveat', cursive";
+  ctx.font = "700 56px 'Quicksand', sans-serif";
   while (ctx.measureText(title).width > IG_H - 360 && title.length > 4) title = title.slice(0, -1);
   if (title !== day.title) title += '…';
   ctx.fillText(title, 0, 0);
-  ctx.fillStyle = 'rgba(255,255,255,.7)';
-  ctx.font = "600 34px 'Caveat', cursive";
-  ctx.fillText(`Day ${day.num} · ${day.dow} ${day.date} · Mimi & Wellen`, 0, 48);
+  ctx.fillStyle = TEAL_D;
+  ctx.font = "700 24px 'Quicksand', sans-serif";
+  ctx.fillText(`DAY ${day.num} · ${day.dow.toUpperCase()} ${day.date.toUpperCase()} · MIMI & WELLEN`, 0, 44);
   ctx.restore();
 
   const blobs = [];
