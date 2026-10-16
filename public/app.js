@@ -1246,130 +1246,124 @@ function drawImageCover(ctx, img, x, y, w, h) {
   ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
 }
 
-function drawStar(ctx, cx, cy, r, color, rotateDeg) {
-  const spikes = 4, inner = r * 0.42;
+// ---- connected carousel: one long black strip, sliced into 1080x1350 slides ----
+const IG_W = 1080, IG_H = 1350, IG_GAP = 30, IG_LEFT = 150, IG_RIGHT = 30, IG_MAX_PHOTOS = 12;
+
+// Decide how many columns / slides the strip needs and which columns hold one tall photo
+// vs. two stacked ones. Column widths are never a multiple of the slide width, so photos
+// naturally straddle the swipe seams and the slides read as one continuous picture.
+function planStrip(n) {
+  const lo = Math.ceil(n / 2), hi = n; // columns hold 1 (tall) or 2 (stacked) photos
+  let slides = n >= 3 ? 2 : 1, C;
+  for (;; slides++) {
+    C = Math.round((slides * IG_W - IG_LEFT - IG_RIGHT) / 620); // aim for roughly square-ish tiles
+    if (C >= lo || slides >= 3) break;
+  }
+  C = Math.max(lo, Math.min(hi, C));
+  const stacks = n - C, talls = 2 * C - n; // talls + 2*stacks = n, talls + stacks = C
+  const types = [];
+  for (let i = 0; i < C; i++) types.push(Math.floor((i + 1) * talls / C) > Math.floor(i * talls / C) ? 'tall' : 'stack');
+  return { C, slides, stacks, talls, types };
+}
+
+function drawTile(ctx, { x, y, w, h, img, caption, polaroid, rotateDeg, seams }) {
   ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate((rotateDeg || 0) * Math.PI / 180);
+  ctx.translate(x + w / 2, y + h / 2);
+  let iw = w, ih = h;
+  if (polaroid) {
+    ctx.rotate((rotateDeg || 0) * Math.PI / 180);
+    iw = w - 22; ih = h - 22;
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,.55)';
+    ctx.shadowBlur = 30; ctx.shadowOffsetY = 10;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(-iw / 2 - 12, -ih / 2 - 12, iw + 24, ih + 24);
+    ctx.restore();
+  }
+  ctx.save();
   ctx.beginPath();
-  for (let i = 0; i < spikes * 2; i++) {
-    const rad = i % 2 === 0 ? r : inner;
-    const ang = (Math.PI / spikes) * i - Math.PI / 2;
-    const x = Math.cos(ang) * rad, y = Math.sin(ang) * rad;
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-  ctx.fillStyle = color;
-  ctx.fill();
-  ctx.restore();
-}
-
-function drawPolaroid(ctx, { cx, cy, w, h, rotateDeg, img, caption }) {
-  const pad = w * 0.06;
-  const photoH = h * 0.76;
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(rotateDeg * Math.PI / 180);
-
-  ctx.save();
-  ctx.shadowColor = 'rgba(51,48,74,.35)';
-  ctx.shadowBlur = 26;
-  ctx.shadowOffsetY = 12;
-  ctx.fillStyle = '#FFFFFF';
-  roundRectPath(ctx, -w / 2, -h / 2, w, h, 6);
-  ctx.fill();
-  ctx.restore();
-
-  const photoX = -w / 2 + pad, photoY = -h / 2 + pad, photoW = w - pad * 2, pH = photoH - pad;
-  ctx.save();
-  roundRectPath(ctx, photoX, photoY, photoW, pH, 3);
+  ctx.rect(-iw / 2, -ih / 2, iw, ih);
   ctx.clip();
-  if (img) drawImageCover(ctx, img, photoX, photoY, photoW, pH);
-  else { ctx.fillStyle = '#EDE7D6'; ctx.fillRect(photoX, photoY, photoW, pH); }
-  ctx.restore();
-
+  if (img) drawImageCover(ctx, img, -iw / 2, -ih / 2, iw, ih);
+  else { ctx.fillStyle = '#2A2833'; ctx.fillRect(-iw / 2, -ih / 2, iw, ih); }
   if (caption) {
-    ctx.fillStyle = '#33304A';
-    ctx.font = "600 32px 'Caveat', cursive";
+    ctx.font = "600 40px 'Caveat', cursive";
     ctx.textAlign = 'center';
-    const lines = wrapCanvasText(ctx, caption, w - pad * 2).slice(0, 2);
-    const bandTop = photoY + pH, bandBottom = h / 2 - 4;
-    const lineH = 34;
-    const startY = (bandTop + bandBottom) / 2 - ((lines.length - 1) * lineH) / 2 + 10;
-    lines.forEach((ln, i) => ctx.fillText(ln, 0, startY + i * lineH));
+    // keep the caption on one side of a swipe seam so it never gets split across two slides
+    const cuts = [x, ...(seams || []).filter(sx => sx > x + 40 && sx < x + w - 40), x + w];
+    let a = cuts[0], b = cuts[1];
+    for (let i = 1; i < cuts.length - 1; i++) if (cuts[i + 1] - cuts[i] > b - a) { a = cuts[i]; b = cuts[i + 1]; }
+    const capCx = (a + b) / 2 - (x + w / 2);
+    const lines = wrapCanvasText(ctx, caption, Math.min(iw, b - a) - 50).slice(0, 2);
+    const barH = lines.length * 42 + 44;
+    const g = ctx.createLinearGradient(0, ih / 2 - barH, 0, ih / 2);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, 'rgba(0,0,0,.62)');
+    ctx.fillStyle = g;
+    ctx.fillRect(-iw / 2, ih / 2 - barH, iw, barH);
+    ctx.fillStyle = '#FFFFFF';
+    lines.forEach((ln, i) => ctx.fillText(ln, capCx, ih / 2 - 22 - (lines.length - 1 - i) * 42));
   }
+  ctx.restore();
   ctx.restore();
 }
 
-const POLAROID_LAYOUTS = {
-  1: [{ cx: 540, cy: 770, w: 640, h: 780, rotateDeg: -2 }],
-  2: [
-    { cx: 335, cy: 730, w: 480, h: 600, rotateDeg: -6 },
-    { cx: 745, cy: 790, w: 480, h: 600, rotateDeg: 5 }
-  ],
-  3: [
-    // rows are spaced so the lower polaroids don't cover the upper captions
-    { cx: 290, cy: 555, w: 390, h: 470, rotateDeg: -6 },
-    { cx: 790, cy: 545, w: 380, h: 460, rotateDeg: 5 },
-    { cx: 540, cy: 1040, w: 390, h: 470, rotateDeg: -3 }
-  ],
-  4: [
-    { cx: 290, cy: 545, w: 380, h: 460, rotateDeg: -6 },
-    { cx: 790, cy: 540, w: 370, h: 450, rotateDeg: 5 },
-    { cx: 290, cy: 1045, w: 380, h: 460, rotateDeg: 4 },
-    { cx: 790, cy: 1050, w: 370, h: 450, rotateDeg: -4 }
-  ]
-};
-
-// Draws one 1080x1350 collage page (up to 4 polaroids) and resolves to a PNG blob.
-async function renderInstagramPage(day, photoSources, pageLabel) {
-  const W = 1080, H = 1350;
-  const canvas = document.createElement('canvas');
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext('2d');
-
-  const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, '#DCEBE7');
-  grad.addColorStop(1, '#F3ECD8');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, W, H);
-
-  drawStar(ctx, 90, 130, 26, SUN, -10);
-  drawStar(ctx, 985, 175, 18, CORAL, 14);
-  drawStar(ctx, 60, 1250, 20, TEAL, 8);
-  drawStar(ctx, 1005, 1270, 16, SUN, -18);
-
-  ctx.textAlign = 'center';
-  ctx.fillStyle = 'rgba(51,48,74,.55)';
-  ctx.font = "700 30px 'Quicksand', sans-serif";
-  ctx.fillText(`DAY ${day.num}/5 · ${day.dow.toUpperCase()} ${day.date.toUpperCase()}`, W / 2, 110);
-
-  ctx.fillStyle = '#33304A';
-  ctx.font = "700 92px 'Quicksand', sans-serif";
-  ctx.fillText(day.title, W / 2, 210);
-
-  ctx.fillStyle = '#1D6B63';
-  ctx.font = "600 34px 'Quicksand', sans-serif";
-  ctx.fillText(day.local, W / 2, 258);
+// Renders every slide of the strip and resolves to an array of PNG blobs.
+async function renderInstagramStrip(day, photoSources) {
+  const plan = planStrip(photoSources.length);
+  const W = plan.slides * IG_W;
+  const strip = document.createElement('canvas');
+  strip.width = W; strip.height = IG_H;
+  const ctx = strip.getContext('2d');
+  ctx.fillStyle = '#0B0B0F';
+  ctx.fillRect(0, 0, W, IG_H);
 
   const loaded = await Promise.all(photoSources.map(async (p) => {
     try { return { img: await loadImage(p.src), caption: p.caption }; }
     catch (e) { return { img: null, caption: p.caption }; }
   }));
 
-  const layout = POLAROID_LAYOUTS[Math.min(loaded.length, 4)] || POLAROID_LAYOUTS[1];
-  loaded.forEach((item, i) => {
-    const pos = layout[i];
-    if (!pos) return;
-    drawPolaroid(ctx, { cx: pos.cx, cy: pos.cy, w: pos.w, h: pos.h, rotateDeg: pos.rotateDeg, img: item.img, caption: item.caption });
+  const x0 = IG_LEFT, areaW = W - IG_LEFT - IG_RIGHT - (plan.C - 1) * IG_GAP;
+  const colW = areaW / plan.C;
+  const y0 = IG_GAP, areaH = IG_H - IG_GAP * 2, halfH = (areaH - IG_GAP) / 2;
+  const seams = Array.from({ length: plan.slides - 1 }, (_, i) => (i + 1) * IG_W);
+  let k = 0, tileNo = 0;
+  plan.types.forEach((type, c) => {
+    const x = x0 + c * (colW + IG_GAP);
+    const cells = type === 'tall' ? [{ y: y0, h: areaH }] : [{ y: y0, h: halfH }, { y: y0 + halfH + IG_GAP, h: halfH }];
+    cells.forEach((cell) => {
+      const item = loaded[k++];
+      if (!item) return;
+      const polaroid = tileNo % 3 === 2; // every third tile gets a tilted white frame
+      drawTile(ctx, { x, y: cell.y, w: colW, h: cell.h, img: item.img, caption: item.caption, polaroid, rotateDeg: tileNo % 2 ? 2.5 : -2.5, seams });
+      tileNo++;
+    });
   });
 
-  ctx.fillStyle = 'rgba(51,48,74,.65)';
-  ctx.font = "700 26px 'Quicksand', sans-serif";
+  // vertical title in the left margin of the first slide, like a scrapbook spine
+  ctx.save();
+  ctx.translate(78, IG_H / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#FFFFFF';
   ctx.textAlign = 'center';
-  ctx.fillText('Mimi & Wellen · Oʻahu' + (pageLabel ? ' · ' + pageLabel : ''), W / 2, H - 46);
+  let title = day.title;
+  ctx.font = "700 64px 'Caveat', cursive";
+  while (ctx.measureText(title).width > IG_H - 360 && title.length > 4) title = title.slice(0, -1);
+  if (title !== day.title) title += '…';
+  ctx.fillText(title, 0, 0);
+  ctx.fillStyle = 'rgba(255,255,255,.7)';
+  ctx.font = "600 34px 'Caveat', cursive";
+  ctx.fillText(`Day ${day.num} · ${day.dow} ${day.date} · Mimi & Wellen`, 0, 48);
+  ctx.restore();
 
-  return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+  const blobs = [];
+  for (let i = 0; i < plan.slides; i++) {
+    const page = document.createElement('canvas');
+    page.width = IG_W; page.height = IG_H;
+    page.getContext('2d').drawImage(strip, i * IG_W, 0, IG_W, IG_H, 0, 0, IG_W, IG_H);
+    blobs.push(await new Promise(resolve => page.toBlob(resolve, 'image/png')));
+  }
+  return blobs;
 }
 
 function downloadBlob(blob, filename) {
@@ -1401,36 +1395,31 @@ async function exportDayAsInstagramPost(dayKey) {
       try { await Promise.all(['400', '600', '700'].map(w => document.fonts.load(`${w} 32px 'Caveat'`))); } catch (e) {}
     }
 
-    // Each collage holds 4 polaroids. With more than 4 photos we make two images:
-    // up to 8 random photos (kept in schedule order), split into two pages.
+    // Use every photo (up to 12); with more, pick 12 at random and keep schedule order.
     let chosen = posts;
-    if (posts.length > 8) {
+    if (posts.length > IG_MAX_PHOTOS) {
       const idx = posts.map((_, i) => i);
       for (let i = idx.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [idx[i], idx[j]] = [idx[j], idx[i]];
       }
-      chosen = idx.slice(0, 8).sort((a, b) => a - b).map(i => posts[i]);
+      chosen = idx.slice(0, IG_MAX_PHOTOS).sort((a, b) => a - b).map(i => posts[i]);
     }
-    const toSource = p => ({ src: p.imagePath, caption: p.text });
-    let pages;
-    if (chosen.length === 0) pages = [[{ src: day.photo.src, caption: day.sub }]];
-    else if (chosen.length <= 4) pages = [chosen.map(toSource)];
-    else {
-      const half = Math.min(4, Math.ceil(chosen.length / 2));
-      pages = [chosen.slice(0, half).map(toSource), chosen.slice(half).map(toSource)];
-    }
+    const sources = chosen.length
+      ? chosen.map(p => ({ src: p.imagePath, caption: p.text }))
+      : [{ src: day.photo.src, caption: day.sub }];
 
+    setStatus('Creating images…');
+    const blobs = await renderInstagramStrip(day, sources);
+    if (blobs.some(b => !b)) { setStatus('Could not create the image — try again.'); return; }
     const slug = day.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    for (let i = 0; i < pages.length; i++) {
-      setStatus(`Creating image ${i + 1} of ${pages.length}…`);
-      const blob = await renderInstagramPage(day, pages[i], pages.length > 1 ? `${i + 1}/${pages.length}` : '');
-      if (!blob) { setStatus('Could not create the image — try again.'); return; }
-      downloadBlob(blob, `oahu-day-${day.num}-${slug}${pages.length > 1 ? '-' + (i + 1) : ''}.png`);
-      if (i < pages.length - 1) await new Promise(r => setTimeout(r, 600));
+    for (let i = 0; i < blobs.length; i++) {
+      downloadBlob(blobs[i], `oahu-day-${day.num}-${slug}${blobs.length > 1 ? '-' + (i + 1) : ''}.png`);
+      if (i < blobs.length - 1) await new Promise(r => setTimeout(r, 600));
     }
-    setStatus(pages.length > 1
-      ? `Saved ${pages.length} images (${chosen.length} of ${posts.length} photos) — check your downloads. Tap again for a different mix.`
+    const extra = posts.length > IG_MAX_PHOTOS ? ` (random ${IG_MAX_PHOTOS} of ${posts.length} photos — tap again for a different mix)` : '';
+    setStatus(blobs.length > 1
+      ? `Saved ${blobs.length} connected images in order${extra}. Post them as one carousel, swiping left to right.`
       : 'Saved — check your downloads.');
   } catch (err) {
     console.error(err);
